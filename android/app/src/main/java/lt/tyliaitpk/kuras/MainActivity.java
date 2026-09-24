@@ -21,12 +21,15 @@ import android.telephony.CellSignalStrength;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import org.json.JSONObject;
 import java.util.List;
 import java.util.Locale;
@@ -72,7 +75,20 @@ public class MainActivity extends Activity {
         connectivityManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
         webView = new WebView(this);
         webView.setBackgroundColor(0xff111318);
-        setContentView(webView);
+        FrameLayout content = new FrameLayout(this);
+        content.setBackgroundColor(0xff111318);
+        content.addView(webView, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (Build.VERSION.SDK_INT >= 35) {
+            // Android 15 draws the app behind system bars. Keep the page inside their safe area.
+            content.setOnApplyWindowInsetsListener((view, insets) -> {
+                android.graphics.Insets safe = insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom);
+                return WindowInsets.CONSUMED;
+            });
+        }
+        setContentView(content);
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
