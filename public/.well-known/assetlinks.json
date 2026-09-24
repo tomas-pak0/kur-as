@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "lt.tyliaitpk.kuras",
+      "sha256_cert_fingerprints": [
+        "A0:F8:54:C8:78:E9:59:DF:8A:78:DC:B9:FA:4C:0B:37:85:AA:80:EC:6F:4A:BC:EC:D5:3C:0A:17:35:D8:4F:EB"
+      ]
+    }
+  }
+]
