@@ -145,7 +145,21 @@ public class MainActivity extends Activity {
                 return true;
             }
         });
-        webView.loadUrl(SITE + "/app.html");
+        webView.loadUrl(startUrl(getIntent()));
+    }
+
+    private String startUrl(Intent intent) {
+        Uri uri = intent == null ? null : intent.getData();
+        return uri != null && trusted(uri) && "/watch.html".equals(uri.getPath())
+            ? uri.toString() : SITE + "/app.html";
+    }
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        if (webView != null && intent != null && intent.getData() != null) {
+            webView.loadUrl(startUrl(intent));
+        }
     }
 
     private boolean trusted(Uri uri) {
@@ -249,7 +263,10 @@ public class MainActivity extends Activity {
         super.onPause();
     }
     @Override public void onBackPressed() {
-        if (webView.canGoBack()) webView.goBack(); else super.onBackPressed();
+        if (webView.canGoBack()) webView.goBack();
+        else if (webView.getUrl() != null && webView.getUrl().startsWith(SITE + "/watch.html"))
+            webView.loadUrl(SITE + "/app.html");
+        else super.onBackPressed();
     }
     @Override protected void onDestroy() {
         if (webView != null) webView.destroy();
