@@ -15,4 +15,4 @@ Atskira Android programėlė dabartinei vietai ir ryšio būsenai matyti.
 ## Paleidimas
 Atidarykite katalogą `android` su Android Studio (JDK 17), leiskite Gradle sinchronizuoti projektą ir paleiskite telefone su Android 8.0 ar naujesne versija. Suteikite vietos ir telefono būsenos leidimus. Žemėlapiui reikia interneto. Palydovų rodmenims būtinas tikslios vietos leidimas; jie gali būti neprieinami pastate ar jei GPS išjungtas. C/N₀ nėra vientisas telefono GPS kokybės procentas. Tikslus signalas priklauso nuo telefono ir SIM, o dviejų SIM atveju rodoma numatytos prenumeratos informacija.
 
-Projekte nėra Gradle wrapper failų; Android Studio gali naudoti savo Gradle arba sugeneruoti wrapper įprastu `gradle wrapper` būdu. Kol kas APK nesukurtas.
+Projekte nėra Gradle wrapper failų; Android Studio gali naudoti savo Gradle. GitHub Actions scenarijus `.github/workflows/android-apk.yml` paruošia Gradle 8.11.1 bei Android SDK 35 ir surenka derinimo APK. Jį galima atsisiųsti iš „Android APK“ vykdymo artefakto `kur-as-debug-apk`. Tai derinimo versija; kiekvienas CI vykdymas gali pasirašyti APK skirtingu derinimo raktu, todėl kitą versiją gali tekti įdiegti iš naujo.
