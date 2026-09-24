@@ -12,6 +12,7 @@
 <header><div class="brand"><img src="/favicon.svg" alt=""><h1>Kur aš?</h1></div></header>
 <main>
 <div class="map-bar"><span id="live" class="live">Laukiama leidimo</span><span id="updated" class="live">Paskutinis matavimas: –</span></div><div class="map-shell"><div id="map" class="map" role="region" aria-label="Tavo vieta žemėlapyje"></div><div class="map-top-controls"><span id="weather" class="map-weather" aria-label="Apytikslis oras vietovėje" title="Laukiama orų duomenų">… °C</span><button id="compass" class="map-compass" type="button" aria-pressed="false" aria-label="Judėjimo kryptis viršuje" title="Judėjimo kryptis viršuje"><svg id="compassNeedle" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="white" stroke-width="1.5"/><path d="M12 3 16 12 12 10 8 12Z" fill="white"/><path d="M12 21 8 12 12 14 16 12Z" fill="#838b96"/></svg></button><button id="centerMap" class="map-recenter" type="button">Kur aš?</button></div><span id="mapSpeed" class="map-speed" aria-label="Judėjimo greitis"><span id="mapPaceIcon" class="pace-icon" aria-hidden="true" hidden></span><span id="mapSpeedValue">– km/h</span></span></div>
+<div id="viewerBar" class="card" hidden><strong>Stebi bendrinamą vietą</strong><p id="viewerNote" class="note">Žemėlapis ir rodmenys yra iš bendrinančio telefono. Atnaujinimai veikia, kol jo programėlė siunčia duomenis.</p><button id="leaveViewer" class="secondary" type="button">Grįžti į savo vietą</button></div>
 <p id="status" role="status">Paspausk „Rodyti mano vietą“ ir suteik leidimą.</p>
 <div class="cards">
 <div class="card coords-card"><span class="label">Koordinatės · paspausk</span><button id="coords" class="coords-button" type="button" disabled>–</button><div id="mapLinks" class="map-links" hidden><div class="map-link-row"><span class="map-link-label">Atverti</span><a id="googleMaps" target="_blank" rel="noopener noreferrer" aria-label="Atverti Google Maps" title="Atverti Google Maps"><img src="/icons/google-maps.svg" alt=""></a><a id="waze" target="_blank" rel="noopener noreferrer" aria-label="Atverti Waze" title="Atverti Waze"><img src="/icons/waze.svg" alt=""></a></div><div class="map-link-row"><span class="map-link-label">Bendrinti</span><button id="shareCoordinate" type="button" aria-label="Bendrinti Google Maps nuorodą" title="Bendrinti Google Maps nuorodą"><img src="/icons/google-maps.svg" alt=""></button><button id="shareWaze" type="button" aria-label="Bendrinti Waze nuorodą" title="Bendrinti Waze nuorodą"><img src="/icons/waze.svg" alt=""></button></div></div></div>
@@ -19,7 +20,7 @@
 <div class="card"><span class="label">Vietos tikslumas</span><span id="accuracy" class="value">–</span></div>
 
 <div class="card"><span class="label">Baterija</span><span id="battery" class="value">Neprieinama</span></div>
-<div class="card"><span class="label">GPS / palydovų signalas</span><span class="value">Naršyklėje neprieinamas</span></div>
+<div class="card"><span class="label">GPS / palydovų signalas</span><span id="gps" class="value">Naršyklėje neprieinamas</span></div>
 <div class="card"><span class="label">Internetas</span><span id="network" class="value">–</span></div>
 <div class="card"><span class="label">Judėjimo greitis</span><span class="value"><span id="paceIcon" class="pace-icon" aria-hidden="true" hidden></span><span id="speed">–</span></span></div>
 <div class="card"><span class="label">Kryptis judant</span><span id="heading" class="value">–</span></div>
@@ -34,10 +35,23 @@
 <script src="/weather.js"></script>
 <script>
 const $=id=>document.getElementById(id);let watcher=null,last=null,lastAddressAt=0,lastAddressPoint=null,addressPending=false,shareSession=null,lastShareAt=0,shareBusy=false,weatherAt=0,weatherPoint=null,weatherBusy=false;
+const matched=location.hash.match(/^#watch=([a-f0-9]{64})$/);let viewerToken=matched?matched[1]:localStorage.getItem('kur-as-paired-viewer');
+if(viewerToken&&!/^[a-f0-9]{64}$/.test(viewerToken))viewerToken=null;
+const remoteMode=!!viewerToken;
+if(remoteMode){
+ localStorage.setItem('kur-as-paired-viewer',viewerToken);
+ $('viewerBar').hidden=false;$('centerMap').textContent='Sekti vietą';
+ $('map').setAttribute('aria-label','Bendrinama vieta žemėlapyje');
+ $('liveShare').parentElement.hidden=true;$('shareStatus').hidden=true;
+ $('start').parentElement.hidden=true;$('live').textContent='● Jungiamasi prie bendrinimo';
+ $('status').textContent='Laukiama bendrinančio telefono duomenų…';
+}
+$('leaveViewer').onclick=()=>{localStorage.removeItem('kur-as-paired-viewer');location.replace('/app.html')};
 const fmt=(n,k=6)=>Number(n).toFixed(k);
-function connection(){ $('network').textContent=navigator.onLine?'Prisijungta':'Nėra ryšio'; }
+function connection(){if(!remoteMode)$('network').textContent=navigator.onLine?'Prisijungta':'Nėra ryšio'; }
 window.addEventListener('online',connection);window.addEventListener('offline',connection);connection();
-if(navigator.getBattery)navigator.getBattery().then(b=>{const update=()=>$('battery').textContent=Math.round(b.level*100)+'%'+(b.charging?' · kraunama':'');update();b.addEventListener('levelchange',update);b.addEventListener('chargingchange',update)}).catch(()=>{});
+if(!remoteMode&&navigator.getBattery)navigator.getBattery().then(b=>{const update=()=>$('battery').textContent=Math.round(b.level*100)+'%'+(b.charging?' · kraunama':'');update();b.addEventListener('levelchange',update);b.addEventListener('chargingchange',update)}).catch(()=>{});
+window.KurAsApplyNativeTelemetry=function(t){if(remoteMode)return;window.KurAsNativeTelemetry=t;$('battery').textContent=t.battery;$('gps').textContent=t.gps;$('network').textContent=t.network};
 
 function haversine(a,b){const r=Math.PI/180,dLat=(b.latitude-a.latitude)*r,dLon=(b.longitude-a.longitude)*r;const q=Math.sin(dLat/2)**2+Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin(dLon/2)**2;return 12742000*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
 const map=L.map('map',{zoomControl:true,zoomSnap:0,zoomDelta:.5,zoomAnimation:true,rotate:true,dragRotate:false,touchRotate:false}).setView([55.1694,23.8813],7);
@@ -59,9 +73,9 @@ function smoothSpeed(speed,at){if(speed===null)return;const elapsed=lastSpeedAt?
 function bearing(a,b){const r=Math.PI/180,lat1=a.latitude*r,lat2=b.latitude*r,dlon=(b.longitude-a.longitude)*r;return(Math.atan2(Math.sin(dlon)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dlon))/r+360)%360}
 function movement(p,previous){const c=p.coords,dt=previous?(p.timestamp-previous.timestamp)/1000:0,dist=previous?haversine(previous.coords,c):0;const reliable=dt>0&&dt<=30&&dist>Math.max(10,c.accuracy,previous.coords.accuracy);const speed=Number.isFinite(c.speed)&&c.speed>=0?c.speed:reliable?dist/dt:null;const heading=Number.isFinite(c.heading)?c.heading:reliable?bearing(previous.coords,c):null;return{speed,heading,moving:speed!==null&&speed>=1&&heading!==null}}
 function pinIcon(m){const symbol=m.moving?'<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 29 29 16 23 3 29Z" fill="#ed3948" stroke="white" stroke-width="2.5" stroke-linejoin="round"/></svg>':'<i></i>';return L.divIcon({className:'',html:'<div class="speed-pin">'+symbol+'</div>',iconSize:[32,32],iconAnchor:[16,16]})}
-function updateMap(c,m){const target=[c.latitude,c.longitude];if(!pin){pin=L.marker(target,{icon:pinIcon(m),rotation:m.moving?m.heading:0,rotateWithView:true}).addTo(map);map.setView(target,speedZoom());return}const from=[pin.getLatLng().lat,pin.getLatLng().lng],at=performance.now();pin.options.rotation=m.moving?m.heading:0;pin.setIcon(pinIcon(m));pin.update();if(animation)cancelAnimationFrame(animation);function move(now){const t=Math.min(1,(now-at)/1000),ease=t*t*(3-2*t);pin.setLatLng([from[0]+(target[0]-from[0])*ease,from[1]+(target[1]-from[1])*ease]);if(t<1)animation=requestAnimationFrame(move)}animation=requestAnimationFrame(move);if(followMap){const zoom=speedZoom();if(Math.abs(zoom-map.getZoom())>.025)map.flyTo(target,zoom,{duration:1});else map.panTo(target,{animate:true,duration:1})}}
+function updateMap(c,m){const target=[c.latitude,c.longitude];if(!pin){pin=L.marker(target,{icon:pinIcon(m),rotation:m.moving?m.heading:0,rotateWithView:true}).addTo(map);map.setView(target,speedZoom());return}const from=[pin.getLatLng().lat,pin.getLatLng().lng],at=performance.now(),duration=remoteMode?10000:1000;pin.options.rotation=m.moving?m.heading:0;pin.setIcon(pinIcon(m));pin.update();if(animation)cancelAnimationFrame(animation);function move(now){const t=Math.min(1,(now-at)/duration),ease=t*t*(3-2*t);pin.setLatLng([from[0]+(target[0]-from[0])*ease,from[1]+(target[1]-from[1])*ease]);if(t<1)animation=requestAnimationFrame(move)}animation=requestAnimationFrame(move);if(followMap){const zoom=speedZoom();if(Math.abs(zoom-map.getZoom())>.025)map.flyTo(target,zoom,{duration:remoteMode?4:1});else map.panTo(target,{animate:true,duration:remoteMode?4:1})}}
 function ageLabel(seconds){if(seconds<60)return seconds+' s';const pad=n=>String(n).padStart(2,'0'),minutes=Math.floor(seconds/60),remainder=pad(seconds%60);return seconds<3600?pad(minutes)+':'+remainder:pad(Math.floor(seconds/3600))+':'+pad(minutes%60)+':'+remainder}
-setInterval(()=>{if(!last)return;const age=Math.max(0,Math.floor((Date.now()-last.timestamp)/1000));$('updated').textContent='Matavimas '+new Date(last.timestamp).toLocaleTimeString('lt-LT')+' · prieš '+ageLabel(age);if(watcher!==null&&age>20)$('live').textContent='● Laukiama duomenų'},1000);
+setInterval(()=>{if(!last)return;const age=Math.max(0,Math.floor((Date.now()-last.timestamp)/1000));$('updated').textContent='Matavimas '+new Date(last.timestamp).toLocaleTimeString('lt-LT')+' · prieš '+ageLabel(age);if((watcher!==null||remoteMode)&&age>20)$('live').textContent='● Laukiama duomenų'},1000);
 $('coords').onclick=()=>$('mapLinks').hidden=!$('mapLinks').hidden;
 async function shareMapLink(link,name){if(!last)return;try{if(navigator.share)await navigator.share({title:'Mano vieta',url:link.href});else{await navigator.clipboard.writeText(link.href);$('status').textContent=name+' nuoroda nukopijuota.'}}catch(e){if(e.name!=='AbortError')$('status').textContent='Bendrinimas nepavyko.'}}
 $('shareCoordinate').onclick=()=>shareMapLink($('googleMaps'),'„Google Maps“');
@@ -75,21 +89,74 @@ async function lookupAddress(c){
  catch(e){$('address').textContent='Adresas neprieinamas (koordinatės rodomos)'}finally{addressPending=false}
 }
 async function lookupWeather(c){if(weatherBusy)return;const now=Date.now();if(weatherPoint&&now-weatherAt<600000&&haversine(weatherPoint,c)<10000)return;weatherBusy=true;weatherAt=now;weatherPoint={latitude:c.latitude,longitude:c.longitude};try{const result=await KurAsWeather.current(c.latitude,c.longitude);$('weather').textContent=result.icon+' '+result.temperature+' °C';$('weather').title=result.label+' · apie '+result.temperature+' °C'}catch(e){$('weather').textContent='Oras –';$('weather').title='Orų duomenys neprieinami';weatherAt=now-540000}finally{weatherBusy=false}}
-function onPosition(p){const c=p.coords,m=movement(p,last);last=p;smoothSpeed(m.speed,p.timestamp);$('coords').textContent=fmt(c.latitude)+', '+fmt(c.longitude);$('coords').disabled=false;$('googleMaps').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(fmt(c.latitude)+','+fmt(c.longitude));$('waze').href='https://www.waze.com/ul?ll='+encodeURIComponent(fmt(c.latitude)+','+fmt(c.longitude))+'&navigate=yes&zoom=17';$('accuracy').textContent='Apie ±'+Math.round(c.accuracy)+' m';$('updated').textContent='Matavimas '+new Date(p.timestamp).toLocaleTimeString('lt-LT')+' · prieš 0 s';$('speed').textContent=m.speed==null?'Nėra duomenų':fmt(m.speed*3.6,1)+' km/h';$('mapSpeedValue').textContent=m.speed==null?'– km/h':fmt(m.speed*3.6,1)+' km/h';showPace(paceFor(m.speed));$('heading').textContent=m.heading==null?'Nėra duomenų':Math.round(m.heading)+'°';lastMoving=m.moving;if(m.moving){lastHeading=m.heading;if(headingUp)map.setHeading(m.heading,{ease:.2,deadzone:.5})}$('live').textContent='● Vieta atnaujinama';$('status').textContent='Rodoma naujausia telefono pateikta vieta.';$('liveShare').disabled=!!shareSession;sendLivePosition(c);lookupAddress(c);lookupWeather(c);updateMap(c,m)}
+function onPosition(p){
+ const c=p.coords,m=movement(p,remoteMode?null:last);last=p;smoothSpeed(m.speed,p.timestamp);
+ $('coords').textContent=fmt(c.latitude)+', '+fmt(c.longitude);$('coords').disabled=false;
+ $('googleMaps').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(fmt(c.latitude)+','+fmt(c.longitude));
+ $('waze').href='https://www.waze.com/ul?ll='+encodeURIComponent(fmt(c.latitude)+','+fmt(c.longitude))+'&navigate=yes&zoom=17';
+ $('accuracy').textContent='Apie ±'+Math.round(c.accuracy)+' m';
+ $('updated').textContent='Matavimas '+new Date(p.timestamp).toLocaleTimeString('lt-LT')+' · prieš '+ageLabel(Math.max(0,Math.floor((Date.now()-p.timestamp)/1000)));
+ $('speed').textContent=m.speed==null?'Nėra duomenų':fmt(m.speed*3.6,1)+' km/h';
+ $('mapSpeedValue').textContent=m.speed==null?'– km/h':fmt(m.speed*3.6,1)+' km/h';showPace(paceFor(m.speed));
+ $('heading').textContent=m.heading==null?'Nėra duomenų':Math.round(m.heading)+'°';lastMoving=m.moving;
+ if(m.moving){lastHeading=m.heading;if(headingUp)map.setHeading(m.heading,{ease:.2,deadzone:.5})}
+ $('live').textContent=remoteMode?'● Stebima vieta':'● Vieta atnaujinama';
+ $('status').textContent=remoteMode?'Rodoma bendrinančio telefono pateikta vieta.':'Rodoma naujausia telefono pateikta vieta.';
+ if(!remoteMode){lastMotion=m;$('liveShare').disabled=!!shareSession;sendLivePosition(c,m,p.timestamp)}
+ lookupAddress(c);lookupWeather(c);updateMap(c,m);
+}
 function onError(e){const msg=e.code===1?'Vietos leidimas nesuteiktas. Jį galima įjungti naršyklės nustatymuose.':e.code===2?'Vietos dabar nepavyksta nustatyti. Patikrink telefono vietos nustatymą.':'Laukiama vietos duomenų. Bandysime toliau.';$('status').textContent=msg;$('live').textContent='Vieta neatnaujinama';if(e.code===1)stop();}
-function start(){if(!navigator.geolocation){$('status').textContent='Ši naršyklė nepalaiko vietos nustatymo.';return}if(watcher!==null)return;watcher=navigator.geolocation.watchPosition(onPosition,onError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});$('start').disabled=true;$('stop').disabled=false;$('status').textContent='Laukiama vietos leidimo ir pirmosios pozicijos…';$('live').textContent='Ieškoma vietos';}
+function start(){if(remoteMode)return;if(!navigator.geolocation){$('status').textContent='Ši naršyklė nepalaiko vietos nustatymo.';return}if(watcher!==null)return;watcher=navigator.geolocation.watchPosition(onPosition,onError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});$('start').disabled=true;$('stop').disabled=false;$('status').textContent='Laukiama vietos leidimo ir pirmosios pozicijos…';$('live').textContent='Ieškoma vietos';}
 function stop(){if(watcher!==null)navigator.geolocation.clearWatch(watcher);watcher=null;$('start').disabled=false;$('stop').disabled=true;$('live').textContent='Atnaujinimas sustabdytas';$('status').textContent='Vietos atnaujinimas sustabdytas.';}
 $('start').onclick=start;$('stop').onclick=stop;
 const saved=localStorage.getItem('kur-as-live-share');
-try{if(saved){const data=JSON.parse(saved);if(/^[a-f0-9]{64}$/.test(data.editor)&&/^[a-f0-9]{64}$/.test(data.viewer)){shareSession=data;showShare();start();}}}catch(e){localStorage.removeItem('kur-as-live-share')}
+try{if(!remoteMode&&saved){const data=JSON.parse(saved);if(/^[a-f0-9]{64}$/.test(data.editor)&&/^[a-f0-9]{64}$/.test(data.viewer)){shareSession=data;showShare();start();}}}catch(e){localStorage.removeItem('kur-as-live-share')}
 function showShare(){const active=!!shareSession;$('liveShare').hidden=active;$('stopShare').hidden=!active;$('copyShare').hidden=!active;$('shareStatus').textContent=active?'Gyvas bendrinimas įjungtas. Nuorodą turintis žmogus matys paskutinę pateiktą vietą, kol bendrinimą nutrauksi. Jei naršyklė sustabdys vietos atnaujinimą, kitas žmogus matys paskutinio atnaujinimo laiką.':'Gyvas bendrinimas išjungtas.';}
 async function shareRequest(body){const response=await fetch('/api/share',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Nepavyko susisiekti');return data}
-async function sendLivePosition(c){if(!shareSession||shareBusy||Date.now()-lastShareAt<10000)return;shareBusy=true;try{await shareRequest({action:'update',token:shareSession.editor,latitude:c.latitude,longitude:c.longitude,accuracy:c.accuracy});lastShareAt=Date.now();$('shareStatus').textContent='Gyvas bendrinimas veikia · vieta atnaujinta '+new Date().toLocaleTimeString('lt-LT')}catch(e){$('shareStatus').textContent='Bendrinimo atnaujinti nepavyko: '+e.message}finally{shareBusy=false}}
-$('liveShare').onclick=async()=>{if(!last)return;$('liveShare').disabled=true;try{const data=await shareRequest({action:'create'});shareSession=data;localStorage.setItem('kur-as-live-share',JSON.stringify(data));showShare();lastShareAt=0;await sendLivePosition(last.coords);await copyViewer();}catch(e){$('shareStatus').textContent='Bendrinimo pradėti nepavyko: '+e.message; if(!shareSession)$('liveShare').disabled=false}};
-const viewerUrl=()=>location.origin+'/watch.html#'+shareSession.viewer;
+let lastMotion=null;
+async function sendLivePosition(c,m,measuredAt){
+ if(remoteMode||!shareSession||shareBusy||Date.now()-lastShareAt<10000)return;
+ shareBusy=true;
+ try{
+  await shareRequest({action:'update',token:shareSession.editor,latitude:c.latitude,longitude:c.longitude,
+   accuracy:c.accuracy,speed:m?.speed??null,heading:m?.heading??null,measuredAt,
+   battery:$('battery').textContent,gps:$('gps').textContent,network:$('network').textContent});
+  lastShareAt=Date.now();$('shareStatus').textContent='Gyvas bendrinimas veikia · duomenys perduoti '+new Date().toLocaleTimeString('lt-LT');
+ }catch(e){$('shareStatus').textContent='Bendrinimo atnaujinti nepavyko: '+e.message}
+ finally{shareBusy=false}
+}
+$('liveShare').onclick=async()=>{if(!last)return;$('liveShare').disabled=true;try{const data=await shareRequest({action:'create'});shareSession=data;localStorage.setItem('kur-as-live-share',JSON.stringify(data));showShare();lastShareAt=0;await sendLivePosition(last.coords,lastMotion,last.timestamp);await copyViewer();}catch(e){$('shareStatus').textContent='Bendrinimo pradėti nepavyko: '+e.message; if(!shareSession)$('liveShare').disabled=false}};
+const viewerUrl=()=>location.origin+'/app.html#watch='+shareSession.viewer;
 async function copyViewer(){if(!shareSession)return;try{if(navigator.share){await navigator.share({title:'Mano gyva vieta',url:viewerUrl()});return}await navigator.clipboard.writeText(viewerUrl());$('shareStatus').textContent='Stebėjimo nuoroda nukopijuota. Ja pasidalyk tik su norimu žmogumi.'}catch(e){if(e.name!=='AbortError')$('shareStatus').textContent='Nuorodos bendrinti nepavyko';}}
 $('copyShare').onclick=copyViewer;
 $('stopShare').onclick=async()=>{if(!shareSession)return;$('stopShare').disabled=true;try{await shareRequest({action:'stop',token:shareSession.editor});localStorage.removeItem('kur-as-live-share');shareSession=null;showShare();$('liveShare').disabled=!last;}catch(e){$('shareStatus').textContent='Nepavyko nutraukti bendrinimo: '+e.message}finally{$('stopShare').disabled=false}};
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&watcher!==null)$('status').textContent='Tikrinama vieta grįžus į puslapį…'});
+setInterval(()=>{if(!remoteMode&&shareSession&&last)sendLivePosition(last.coords,lastMotion,last.timestamp)},10000);
+let lastRemoteUpdate=0,remoteBusy=false,remoteStopped=false;
+async function refreshRemote(){
+ if(!remoteMode||remoteBusy||remoteStopped||document.hidden)return;
+ remoteBusy=true;
+ try{
+  const d=await shareRequest({action:'view',token:viewerToken});
+  if(d.latitude===null){$('status').textContent='Bendrinimas įjungtas, laukiama pirmosios vietos.';return}
+  const c={latitude:Number(d.latitude),longitude:Number(d.longitude),accuracy:Number(d.accuracy),
+   speed:d.speed===null?null:Number(d.speed),heading:d.heading===null?null:Number(d.heading)};
+  if(d.updatedAt!==lastRemoteUpdate){
+   lastRemoteUpdate=d.updatedAt;onPosition({coords:c,timestamp:Number(d.measuredAt)||Number(d.updatedAt)});
+   $('battery').textContent=d.battery||'Neprieinama';
+   $('gps').textContent=d.gps||'Neprieinamas';$('network').textContent=d.network||'Neprieinamas';
+  }
+  const age=Math.max(0,Math.floor((Date.now()-Number(d.updatedAt))/1000));
+  $('viewerNote').textContent='Bendrinančio telefono rodmenys · paskutinį kartą perduoti prieš '+ageLabel(age)+'.';
+  if(age>30){$('live').textContent='● Duomenys neatnaujinami';$('status').textContent='Rodoma paskutinė gauta vieta.'}
+ }catch(e){
+  if(e.message==='Bendrinimas išjungtas'){
+   remoteStopped=true;localStorage.removeItem('kur-as-paired-viewer');$('live').textContent='● Bendrinimas nutrauktas';
+   $('status').textContent='Bendrinantis asmuo nutraukė bendrinimą.';
+   $('viewerNote').textContent='Ši nuoroda nebeveikia. Gali grįžti prie savo vietos.';
+  }else $('status').textContent='Nepavyko atnaujinti bendrinimo: '+e.message;
+ }finally{remoteBusy=false}
+}
+if(remoteMode){refreshRemote();setInterval(refreshRemote,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshRemote()})}
 </script>
 </body></html>

@@ -8,6 +8,13 @@
       "when": 1790240855004,
       "tag": "0000_broken_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790273902648,
+      "tag": "0001_marvelous_blizzard",
+      "breakpoints": true
     }
   ]
 }

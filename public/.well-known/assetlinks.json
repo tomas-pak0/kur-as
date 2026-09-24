@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "lt.tyliaitpk.kuras",
       "sha256_cert_fingerprints": [
-        "A0:F8:54:C8:78:E9:59:DF:8A:78:DC:B9:FA:4C:0B:37:85:AA:80:EC:6F:4A:BC:EC:D5:3C:0A:17:35:D8:4F:EB"
+        "A0:F8:54:C8:78:E9:59:DF:8A:78:DC:B9:FA:4C:0B:37:85:AA:80:EC:6F:4A:BC:EC:D5:3C:0A:17:35:D8:4F:EB",
+        "5C:D2:68:1B:E7:34:7A:B9:2D:25:E2:33:B4:BD:24:83:F8:F3:65:67:AD:CD:CB:22:4C:5E:9A:A3:31:87:C9:78"
       ]
     }
   }
