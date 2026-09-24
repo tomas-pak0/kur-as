@@ -1,18 +1,11 @@
 # Kur aš? – Android
 
-Atskira Android programėlė dabartinei vietai ir ryšio būsenai matyti.
+Android programėlė rodo tą pačią „Kur aš?“ sąsają, kuri atidaroma „TyliaiTPk“ svetainėje. Žemėlapis, oras, adreso paieška, kompaso režimas ir gyvas bendrinimas veikia per saugų svetainės adresą `https://kur-as.t0m45-p4k0.chatgpt.site/app.html`. Todėl programėlei reikia interneto, o svetainėje paskelbti sąsajos pakeitimai matomi ir APK.
 
-## Funkcijos
-- OpenStreetMap žemėlapis ir buvimo vietos žymeklis.
-- Koordinatės, vietos nustatymo tikslumo įvertis ir matavimo laikas.
-- Matomų ir vietos fiksavimui naudojamų GNSS palydovų skaičius bei vidutinis naudojamų palydovų C/N₀ (dB-Hz).
-- Wi-Fi arba mobiliųjų duomenų būklė, mobiliojo signalo lygis (0–4) ir dBm, jei telefonas pateikia.
-- Apytikslis adresas (jei telefono geokoderis jį randa), telefono modelis, Android versija ir baterija.
-- Mygtukai grįžti prie savo vietos ir bendrinti OpenStreetMap nuorodą.
-- Gyvo bendrinimo mygtukas atveria naršyklės versiją; joje galima įjungti vietos siuntimą kitiems iki išjungimo. Android programėlė atskirai fone vietos nesiunčia.
-- Vietos informacija nesiunčiama į programėlės serverį. Žemėlapio plytelės gaunamos internetu iš OpenStreetMap; bendrinimas vyksta tik naudotojui paspaudus mygtuką.
+Telefono Android dalis į tos pačios sąsajos korteles papildomai įrašo matomų ir vietai naudojamų GNSS palydovų skaičių, vidutinį naudojamų palydovų C/N₀ (dB-Hz), tinklo tipą, mobiliojo signalo lygį ir dBm (kai telefonas pateikia), baterijos įkrovą. Ji pati vietos į serverį nesiunčia – gyvas bendrinimas įjungiamas programėlės ekrane taip pat kaip naršyklėje.
 
-## Paleidimas
-Atidarykite katalogą `android` su Android Studio (JDK 17), leiskite Gradle sinchronizuoti projektą ir paleiskite telefone su Android 8.0 ar naujesne versija. Suteikite vietos ir telefono būsenos leidimus. Žemėlapiui reikia interneto. Palydovų rodmenims būtinas tikslios vietos leidimas; jie gali būti neprieinami pastate ar jei GPS išjungtas. C/N₀ nėra vientisas telefono GPS kokybės procentas. Tikslus signalas priklauso nuo telefono ir SIM, o dviejų SIM atveju rodoma numatytos prenumeratos informacija.
+## Įdiegimas ir paleidimas
 
-Projekte nėra Gradle wrapper failų; Android Studio gali naudoti savo Gradle. GitHub Actions scenarijus `.github/workflows/android-apk.yml` naudoja Gradle 8.11.1 ir vykdyklės Android SDK 35, tada surenka derinimo APK. Jį galima atsisiųsti iš „Android APK“ vykdymo artefakto `kur-as-debug-apk`. Tai derinimo versija; kiekvienas CI vykdymas gali pasirašyti APK skirtingu derinimo raktu, todėl kitą versiją gali tekti įdiegti iš naujo.
+Atidarykite `android` katalogą per Android Studio su JDK 17 arba atsisiųskite „GitHub Actions“ scenarijaus **Android APK** artefaktą `kur-as-debug-apk`. Palaikoma Android 8.0 ir naujesnė versija. Paspaudus „Rodyti mano vietą“ prašoma vietos ir telefono būsenos leidimų; atskirai leidžiama juos pakeisti telefono nustatymuose. Jei neleidžiama tiksli vieta, GNSS palydovų rodmenų gali nebūti.
+
+APK yra derinimo versija. Kiekvienas CI surinkimas gali naudoti kitą derinimo raktą, todėl norint įdiegti kitą APK versiją gali reikėti pašalinti ankstesnę. Projekte nėra Gradle wrapper failų; CI įdiegia Gradle 8.11.1 ir surenka `:app:assembleDebug`.

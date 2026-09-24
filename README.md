@@ -1,6 +1,6 @@
 # Kur aš?
 
-Saugykloje yra dvi programėlės versijos: dabartinė naršyklės versija ir atskiras ankstyvesnis „Android“ projektas aplanke `android/`. „Android“ versija rodo telefono GNSS ir mobiliojo ryšio rodmenis; gyvam bendrinimui ji atveria naršyklės versiją.
+Saugykloje yra dvi programėlės versijos: dabartinė naršyklės versija ir „Android“ programėlė aplanke `android/`. „Android“ programėlė atveria tą pačią sąsają ir papildomai joje rodo telefono GNSS bei mobiliojo ryšio rodmenis.
 
 Telefono naršyklei pritaikyta vietos programėlė. Rodo vietą žemėlapyje, tikslumą, apytikslį adresą, greitį, judėjimo kryptį, orą ir naršyklės pateikiamą baterijos bei interneto būseną. Kompaso mygtuku galima perjungti šiaurę viršuje arba judėjimo kryptį viršuje. Koordinates galima atverti ir bendrinti per „Google Maps“ ar „Waze“.
 
