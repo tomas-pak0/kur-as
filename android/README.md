@@ -4,7 +4,7 @@ Android programėlė rodo tą pačią „Kur aš?“ sąsają, kuri atidaroma �
 
 Telefono Android dalis į tos pačios sąsajos korteles papildomai įrašo matomų ir vietai naudojamų GNSS palydovų skaičių, vidutinį naudojamų palydovų C/N₀ (dB-Hz), tinklo tipą, mobiliojo signalo lygį ir dBm (kai telefonas pateikia), baterijos įkrovą. Ji pati vietos į serverį nesiunčia – gyvas bendrinimas įjungiamas programėlės ekrane taip pat kaip naršyklėje.
 
-Kito asmens gauta `https://kur-as.t0m45-p4k0.chatgpt.site/watch.html#…` stebėjimo nuoroda gali atsidaryti tiesiai „Kur aš?“ programėlėje, jei ji įdiegta ir Android patvirtino svetainės sąsają su APK parašu. Stebėjimo ekrane rodomi bendrinančio žmogaus duomenys; atidarius programėlę įprastai, rodoma paties telefono vieta. Be programėlės nuoroda ir toliau veikia naršyklėje.
+Paspaudus „Pradėti gyvą bendrinimą“ sukuriama stebėjimo nuoroda į `/app.html#watch=…`. Kitas asmuo gali atverti ją įdiegtoje „Kur aš?“ programėlėje arba naršyklėje: ta pati pagrindinė sąsaja rodo bendrinančio telefono vietą, greitį, kryptį, tikslumą, bateriją, GPS ir tinklo duomenis. Adresas bei oras gaunami pagal bendrinamas koordinates. Susiejimas išsaugomas stebėtojo telefone, kol jis paspaudžia „Grįžti į savo vietą“ arba bendrintojas nutraukia bendrinimą. Senesnės `/watch.html#…` nuorodos taip pat nukreipiamos į pilną stebėjimo vaizdą. Be įdiegto APK nuoroda veikia naršyklėje; Android patikrina svetainės sąsają su konkretaus APK parašu, prieš atidarydamas nuorodą programėlėje.
 
 ## Įdiegimas ir paleidimas
 

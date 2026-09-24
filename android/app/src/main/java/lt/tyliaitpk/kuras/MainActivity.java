@@ -150,8 +150,17 @@ public class MainActivity extends Activity {
 
     private String startUrl(Intent intent) {
         Uri uri = intent == null ? null : intent.getData();
-        return uri != null && trusted(uri) && "/watch.html".equals(uri.getPath())
-            ? uri.toString() : SITE + "/app.html";
+        if (uri != null && trusted(uri)) {
+            String fragment = uri.getFragment();
+            if (fragment != null && fragment.matches("[a-f0-9]{64}")) {
+                if ("/watch.html".equals(uri.getPath()))
+                    return SITE + "/app.html?open=" + System.currentTimeMillis() + "#watch=" + fragment;
+            }
+            if ("/app.html".equals(uri.getPath()) && fragment != null
+                && fragment.matches("watch=[a-f0-9]{64}"))
+                return SITE + "/app.html?open=" + System.currentTimeMillis() + "#" + fragment;
+        }
+        return SITE + "/app.html";
     }
 
     @Override protected void onNewIntent(Intent intent) {
@@ -229,11 +238,10 @@ public class MainActivity extends Activity {
         BatteryManager battery = (BatteryManager) getSystemService(BATTERY_SERVICE);
         int charge = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
         String batteryText = charge >= 0 && charge <= 100 ? charge + "%" : "Neprieinama";
-        String script = "(function(){var cards=document.querySelectorAll('.card');for(var i=0;i<cards.length;i++){"
-            + "var label=cards[i].querySelector('.label');if(label&&label.textContent.indexOf('GPS / palydovų signalas')>=0){"
-            + "var value=cards[i].querySelector('.value');if(value)value.textContent=" + JSONObject.quote(gpsText) + ";}}"
-            + "var n=document.getElementById('network');if(n)n.textContent=" + JSONObject.quote(networkText + " · Mobilusis " + signalText) + ";"
-            + "var b=document.getElementById('battery');if(b)b.textContent=" + JSONObject.quote(batteryText) + ";})();";
+        String script = "(function(){if(window.KurAsApplyNativeTelemetry)window.KurAsApplyNativeTelemetry({"
+            + "gps:" + JSONObject.quote(gpsText) + ",network:"
+            + JSONObject.quote(networkText + " · Mobilusis " + signalText)
+            + ",battery:" + JSONObject.quote(batteryText) + "});})();";
         runOnUiThread(() -> { if (pageReady) webView.evaluateJavascript(script, null); });
     }
     @Override protected void onResume() {

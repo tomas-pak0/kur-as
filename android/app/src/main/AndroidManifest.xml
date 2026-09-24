@@ -15,6 +15,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="kur-as.t0m45-p4k0.chatgpt.site" android:path="/watch.html" />
+                <data android:scheme="https" android:host="kur-as.t0m45-p4k0.chatgpt.site" android:path="/app.html" />
             </intent-filter>
         </activity>
     </application>
