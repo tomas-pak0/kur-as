@@ -9,11 +9,15 @@ Telefono naršyklei pritaikyta vietos programėlė. Rodo vietą žemėlapyje, ti
 Reikia Node.js 22.13 ar naujesnės versijos.
 
 ```sh
+git clone https://github.com/tomas-pak0/kur-as.git
+cd kur-as
 npm ci
 npm run dev
 ```
 
-Atverkite `/app.html` vietiniame kūrimo serveryje. Naršyklės geolokacijai reikia saugaus konteksto (HTTPS arba `localhost`) ir naudotojo leidimo. Gyvam bendrinimui taip pat reikia serverio D1 duomenų bazės `DB` susiejimo.
+Atverkite `http://localhost:5173/app.html`. Naršyklės geolokacijai reikia saugaus konteksto (HTTPS arba `localhost`) ir naudotojo leidimo. Patikrinimas: `npm run build`.
+
+Gyvam bendrinimui reikia veikiančios Cloudflare D1 duomenų bazės, susietos vardu `DB`, ir lentelės iš `drizzle/0000_broken_storm.sql`. Be jos vietos žemėlapis veikia, tačiau naujo gyvo bendrinimo pradėti nepavyks. Ši saugykla yra išeities kodas; vien „GitHub Pages“ serverinės bendrinimo API nepaleidžia.
 
 ## Svarbiausi failai
 
@@ -21,6 +25,7 @@ Atverkite `/app.html` vietiniame kūrimo serveryje. Naršyklės geolokacijai rei
 - `public/watch.html` – gyvos vietos stebėjimas pagal nuorodą.
 - `app/api/share/route.ts` – bendrinimo API.
 - `public/vendor/` – vietinės žemėlapio bibliotekų kopijos.
+- `drizzle/0000_broken_storm.sql` – bendrinimo duomenų bazės schema.
 - `.openai/hosting.json` – svetainės talpinimo nustatymai.
 
 Veikianti versija: https://kur-as.t0m45-p4k0.chatgpt.site/app.html
