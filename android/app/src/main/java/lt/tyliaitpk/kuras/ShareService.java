@@ -120,9 +120,13 @@ public class ShareService extends Service {
             editor = token; runningToken = token; cancelling = false; lastLocation = null;
             getSharedPreferences("live_share", MODE_PRIVATE).edit().putString("editor", token)
                 .remove("stopped").remove("pending_stop").apply();
-            if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION, notification(false),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
-            else startForeground(NOTIFICATION, notification(false));
+            try {
+                if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION, notification(false),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
+                else startForeground(NOTIFICATION, notification(false));
+            } catch (SecurityException ex) {
+                runningToken = null; editor = null; stopSelf(); return START_NOT_STICKY;
+            }
             startTracking();
         } else if (STOP.equals(action)) {
             boolean alreadyRunning = editor != null;
@@ -168,9 +172,9 @@ public class ShareService extends Service {
     private void stopTracking() {
         if (!tracking) return;
         tracking = false;
-        locations.removeUpdates(listener);
+        try { locations.removeUpdates(listener); } catch (SecurityException ignored) { }
         try { locations.unregisterGnssStatusCallback(gnss); }
-        catch (IllegalArgumentException ignored) { }
+        catch (IllegalArgumentException | SecurityException ignored) { }
     }
 
     private Notification notification(boolean stopping) {
@@ -221,7 +225,7 @@ public class ShareService extends Service {
                 .put("heading", location.hasBearing() ? location.getBearing() : JSONObject.NULL)
                 .put("measuredAt", Math.min(System.currentTimeMillis(), Math.max(0, location.getTime())))
                 .put("battery", battery()).put("gps", gpsText).put("network", network());
-            if (post(data) == 410) {
+            if (post(data) == 410 && token.equals(editor)) {
                 cancelling = true; stopTracking(); updateNotification(true);
             }
         } catch (Exception ignored) { /* The next interval retries with the latest location. */ }
