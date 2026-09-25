@@ -83,8 +83,7 @@ function showAlignment(points,name,startMetres){
   if(direction>0){
    const deltaLat=east/direction*5/metresNorth,deltaLon=-north/direction*5/metresEast;
    const dash=[[point[0]-deltaLat,point[1]-deltaLon],[point[0]+deltaLat,point[1]+deltaLon]];
-   L.polyline(dash,{color:'#fff',weight:5,opacity:.95,interactive:false}).addTo(stationLayer);
-   L.polyline(dash,{color:'#ed3948',weight:2.5,opacity:1,interactive:false}).addTo(stationLayer);
+   L.polyline(dash,{color:'#ed3948',weight:3,opacity:1,interactive:false}).addTo(stationLayer);
   }
   L.marker(point,{interactive:false,icon:L.divIcon({className:'station-label-icon',html:'<span class="station-label">PK '+KurAsAlignment.station(st,stationGroup())+'</span>',iconSize:[75,20],iconAnchor:[37,26]})}).addTo(stationLayer);
  }
