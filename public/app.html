@@ -234,8 +234,9 @@ async function refreshRemote(){
    $('gps').textContent=d.gps||'Neprieinamas';$('network').textContent=d.network||'Neprieinamas';
   }
   const age=Math.max(0,Math.floor((Date.now()-Number(d.updatedAt))/1000));
-  $('viewerNote').textContent='Bendrinančio telefono rodmenys · paskutinį kartą perduoti prieš '+ageLabel(age)+'.';
-  if(age>30){$('live').textContent='● Duomenys neatnaujinami';$('status').textContent='Rodoma paskutinė gauta vieta.'}
+  const measurementAge=Math.max(0,Math.floor((Date.now()-Number(d.measuredAt||d.updatedAt))/1000));
+  $('viewerNote').textContent='Bendrinančio telefono rodmenys · perduoti prieš '+ageLabel(age)+' · vieta išmatuota prieš '+ageLabel(measurementAge)+'.';
+  if(age>30||measurementAge>30){$('live').textContent='● Duomenys neatnaujinami';$('status').textContent='Rodoma paskutinė gauta vieta.'}
  }catch(e){
   if(e.message==='Bendrinimas išjungtas'){
    remoteStopped=true;localStorage.removeItem('kur-as-paired-viewer');$('live').textContent='● Bendrinimas nutrauktas';

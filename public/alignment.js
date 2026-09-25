@@ -24,7 +24,7 @@
       if(xml.querySelector('parsererror'))throw Error('Nepavyko perskaityti GPX.');
       const points=[...xml.getElementsByTagName('rtept')];
       if(!points.length)points.push(...xml.getElementsByTagName('trkpt'));
-      return check(points.map(p=>[Number(p.getAttribute('lat')),Number(p.getAttribute('lon'))]));
+      return check(points.map(p=>[p.hasAttribute('lat')?Number(p.getAttribute('lat')):NaN,p.hasAttribute('lon')?Number(p.getAttribute('lon')):NaN]));
     }
     if(/\.csv$/i.test(filename)){
       const lines=text.trim().split(/\r?\n/).filter(Boolean);
