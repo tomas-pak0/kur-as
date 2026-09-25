@@ -29,7 +29,7 @@
 <div class="actions"><button id="liveShare" class="secondary" disabled>Pradėti gyvą bendrinimą</button><button id="stopShare" class="secondary" hidden>Nutraukti bendrinimą</button><button id="copyShare" class="secondary" hidden>Kopijuoti stebėjimo nuorodą</button></div>
 <p id="shareStatus" class="note" role="status">Gyvas bendrinimas išjungtas. Kitas žmogus matys vietą tik tau jį įjungus ir perdavus nuorodą.</p>
 <div class="actions"><button id="start">Rodyti mano vietą</button><button id="stop" class="secondary" disabled>Sustabdyti</button></div>
-<p class="note">Žemėlapio žymeklis juda sklandžiai, tačiau naujus GPS matavimus pateikia telefonas pagal savo galimybes. Vieta kitiems siunčiama tik įjungus gyvą bendrinimą. „Android“ programėlė tuomet rodo pranešimą ir siunčia vietą net užrakintame telefone; bendrinimą galima nutraukti ekrane arba pranešime. Naršyklėje vieta atnaujinama, kol puslapis atidarytas ir naršyklė leidžia jam veikti. Žemėlapiui ir orų duomenims reikia interneto. Apytikslis vietovės oras gaunamas iš <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>; tai nėra telefono išmatuotos sąlygos. Adresas yra apytikslis: jo paieškai koordinatės perduodamos „OpenStreetMap“ adresų paslaugai. Baterijos rodmuo priklauso nuo naršyklės. Palydovų skaičių ir jų signalo stiprumą (dB-Hz) rodys „Android“ programėlė. Naršyklė šių rodmenų ir mobiliojo signalo dBm nepateikia.</p>
+<p class="note">Žemėlapio žymeklis juda sklandžiai, tačiau naujus GPS matavimus pateikia telefonas pagal savo galimybes. Vieta kitiems siunčiama tik įjungus gyvą bendrinimą. „Android“ programėlė rodo nuolatinį pranešimą ir siunčia vietą veikdama fone, kol telefonas leidžia naudoti GPS bei ryšį; tikrink paskutinio perdavimo laiką viršuje. Bendrinimą galima nutraukti ekrane arba pranešime. Naršyklėje vieta atnaujinama, kol puslapis atidarytas ir naršyklė leidžia jam veikti. Žemėlapiui ir orų duomenims reikia interneto. Apytikslis vietovės oras gaunamas iš <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>; tai nėra telefono išmatuotos sąlygos. Adresas yra apytikslis: jo paieškai koordinatės perduodamos „OpenStreetMap“ adresų paslaugai. Baterijos rodmuo priklauso nuo naršyklės. Palydovų skaičių ir jų signalo stiprumą (dB-Hz) rodys „Android“ programėlė. Naršyklė šių rodmenų ir mobiliojo signalo dBm nepateikia.</p>
 </main>
 <script src="/vendor/leaflet/leaflet.js"></script>
 <script src="/vendor/leaflet-rotate/leaflet-rotate.umd.min.js"></script>
@@ -58,17 +58,21 @@ window.KurAsApplyNativeTelemetry=function(t){if(remoteMode)return;window.KurAsNa
 function haversine(a,b){const r=Math.PI/180,dLat=(b.latitude-a.latitude)*r,dLon=(b.longitude-a.longitude)*r;const q=Math.sin(dLat/2)**2+Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin(dLon/2)**2;return 12742000*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
 const map=L.map('map',{zoomControl:true,zoomSnap:0,zoomDelta:.5,zoomAnimation:true,rotate:true,dragRotate:false,touchRotate:false}).setView([55.1694,23.8813],7);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',maxZoom:19}).addTo(map);
-let alignment=null,alignmentLayer=null,nearestLine=null;
+let alignment=null,alignmentLayer=null,stationLayer=null,nearestLine=null;
+function stationVisibility(){if(!stationLayer)return;if(map.getZoom()>=14){if(!map.hasLayer(stationLayer))stationLayer.addTo(map)}else if(map.hasLayer(stationLayer))stationLayer.remove()}
+map.on('zoomend',stationVisibility);
 function showAlignment(points,name,startMetres){
  const line=KurAsAlignment.prepare(points);
- if(alignmentLayer)alignmentLayer.remove();if(nearestLine)nearestLine.remove();
+ if(alignmentLayer)alignmentLayer.remove();if(stationLayer)stationLayer.remove();if(nearestLine)nearestLine.remove();
  alignment={...line,startMetres,name};alignmentLayer=L.layerGroup().addTo(map);
+ stationLayer=L.layerGroup();
  L.polyline(points,{color:'#67d4df',weight:5,opacity:.9}).addTo(alignmentLayer);
  const first=Math.ceil(startMetres/100)*100;
  for(let st=first,count=0;st<=startMetres+line.total&&count<250;st+=100,count++){
   const point=KurAsAlignment.at(line,st-startMetres);
-  L.marker(point,{interactive:false,icon:L.divIcon({className:'station-label-icon',html:'<span class="station-label">'+KurAsAlignment.station(st)+'</span>',iconSize:[45,20],iconAnchor:[22,26]})}).addTo(alignmentLayer);
+  L.marker(point,{interactive:false,icon:L.divIcon({className:'station-label-icon',html:'<span class="station-label">'+KurAsAlignment.station(st)+'</span>',iconSize:[45,20],iconAnchor:[22,26]})}).addTo(stationLayer);
  }
+ stationVisibility();
  $('clearAlignment').hidden=false;$('alignmentReadout').hidden=false;
  $('alignmentStatus').textContent=name+' · '+Math.round(line.total)+' m · kas 100 m pažymėti piketai. Rodmuo apvalinamas kas 5 m; tikslumą riboja GPS.';
  if(last)updateAlignment(last.coords);
@@ -81,7 +85,7 @@ function updateAlignment(c){
  if(!nearestLine)nearestLine=L.polyline([],{color:'#f7c85e',weight:2,dashArray:'5,5',interactive:false}).addTo(map);
  nearestLine.setLatLngs([[c.latitude,c.longitude],result.point]);
 }
-function clearAlignment(){alignment=null;if(alignmentLayer)alignmentLayer.remove();alignmentLayer=null;if(nearestLine)nearestLine.remove();nearestLine=null;localStorage.removeItem('kur-as-alignment');$('alignmentFile').value='';$('alignmentReadout').hidden=true;$('clearAlignment').hidden=true;$('alignmentStatus').textContent='Ašis pašalinta. Įkelk GeoJSON, GPX arba CSV su WGS84 koordinatėmis.'}
+function clearAlignment(){alignment=null;if(alignmentLayer)alignmentLayer.remove();alignmentLayer=null;if(stationLayer)stationLayer.remove();stationLayer=null;if(nearestLine)nearestLine.remove();nearestLine=null;localStorage.removeItem('kur-as-alignment');$('alignmentFile').value='';$('alignmentReadout').hidden=true;$('clearAlignment').hidden=true;$('alignmentStatus').textContent='Ašis pašalinta. Įkelk GeoJSON, GPX arba CSV su WGS84 koordinatėmis.'}
 $('clearAlignment').onclick=clearAlignment;
 $('alignmentFile').onchange=async event=>{
  const file=event.target.files[0];if(!file)return;
@@ -157,9 +161,9 @@ function stop(){if(watcher!==null)navigator.geolocation.clearWatch(watcher);watc
 $('start').onclick=start;$('stop').onclick=stop;
 const saved=localStorage.getItem('kur-as-live-share');
 try{if(!remoteMode&&saved){const data=JSON.parse(saved);if(/^[a-f0-9]{64}$/.test(data.editor)&&/^[a-f0-9]{64}$/.test(data.viewer)){shareSession=data;showShare();start();}}}catch(e){localStorage.removeItem('kur-as-live-share')}
-function showShare(){const active=!!shareSession;$('liveShare').hidden=active;$('stopShare').hidden=!active;$('copyShare').hidden=!active;$('stop').disabled=active||watcher===null;$('shareStatus').textContent=active?(window.KurAsNative?'Gyvas bendrinimas įjungtas. Android pranešimas leidžia jį sustabdyti, o vieta siunčiama užrakinus telefoną.':'Gyvas bendrinimas įjungtas. Naršyklėje atnaujinimai gali sustoti, kai telefonas užrakinamas.'):'Gyvas bendrinimas išjungtas.';}
+function showShare(){const active=!!shareSession;$('liveShare').hidden=active;$('stopShare').hidden=!active;$('copyShare').hidden=!active;$('stop').disabled=active||watcher===null;$('shareStatus').textContent=active?(window.KurAsNative?'Gyvas bendrinimas įjungtas. Laukiama foninio perdavimo patikrinimo.':'Gyvas bendrinimas įjungtas. Naršyklėje atnaujinimai gali sustoti, kai telefonas užrakinamas.'):'Gyvas bendrinimas išjungtas.';}
 async function shareRequest(body){const response=await fetch('/api/share',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Nepavyko susisiekti');return data}
-let lastMotion=null,nativeActive=false;
+let lastMotion=null,nativeActive=false,lastNativeStart=0;
 async function sendLivePosition(c,m,measuredAt){
  if(remoteMode||nativeActive||!shareSession||shareBusy||Date.now()-lastShareAt<10000)return;
  shareBusy=true;
@@ -185,7 +189,8 @@ function syncNativeSharing(){
    $('liveShare').disabled=!last;$('shareStatus').textContent='Bendrinimas sustabdytas telefono pranešime.';return;
   }
   if(state==='stopping'){$('shareStatus').textContent='Bendrinimas nutraukiamas, laukiama ryšio.';nativeActive=true;return}
-  nativeActive=state==='running'||window.KurAsNative.start(shareSession.editor)==='ok';
+  if(state==='running')nativeActive=true;
+  else {lastNativeStart=Date.now();nativeActive=window.KurAsNative.start(shareSession.editor)==='ok'}
   if(!nativeActive)$('shareStatus').textContent='Foninio bendrinimo paleisti nepavyko. Vieta siunčiama tik atidarius programėlę.';
   else updateNativeHealth();
  }catch(e){nativeActive=false;$('shareStatus').textContent='Foninis bendrinimas neprieinamas. Vieta siunčiama tik atidarius programėlę.'}
@@ -195,7 +200,11 @@ function updateNativeHealth(){
  try{
   const health=JSON.parse(window.KurAsNative.health(shareSession.editor));
   if(health.state!=='running'){
-   if(health.state==='idle')syncNativeSharing();
+   if(health.state==='idle'){
+    nativeActive=false;
+    $('shareStatus').textContent='Foninis siuntimas neveikia · atidarytoje programėlėje vieta siunčiama toliau.';
+    if(Date.now()-lastNativeStart>60000)syncNativeSharing();
+   }
    else if(health.state==='stopping')$('shareStatus').textContent='Bendrinimas nutraukiamas, laukiama ryšio.';
    return;
   }

@@ -4,6 +4,8 @@ Saugykloje yra dvi programėlės versijos: dabartinė naršyklės versija ir „
 
 Telefono naršyklei pritaikyta vietos programėlė. Rodo vietą žemėlapyje, tikslumą, apytikslį adresą, greitį, judėjimo kryptį, orą ir naršyklės pateikiamą baterijos bei interneto būseną. Kompaso mygtuku galima perjungti šiaurę viršuje arba judėjimo kryptį viršuje. Koordinates galima atverti ir bendrinti per „Google Maps“ ar „Waze“.
 
+Rankiniu būdu pajudinus žemėlapį ar pakeitus mastelį, automatinis sekimas ir pagal greitį keičiamas mastelis sustoja iki mygtuko „Kur aš?“ paspaudimo. Ašį galima įkelti iš WGS84 GeoJSON `LineString`, GPX (`rtept` arba `trkpt`) arba CSV failo su `lat,lon` antrašte. Įvedamas pradinis piketas metrais. Žemėlapyje ašis rodoma su šimto metrų piketų žymomis priartinus, o buvimo vietai skaičiuojamas artimiausias piketas kas 5 m ir atstumas iki ašies. Tikslumą riboja GPS, failas saugomas tik to įrenginio naršyklėje.
+
 Įjungus gyvą bendrinimą sukuriama stebėjimo nuoroda. Vietos atnaujinimas veikia, kol naršyklė leidžia šiam puslapiui veikti; stebėtojas mato paskutinio atnaujinimo laiką. Bendrinimą galima bet kada nutraukti. Telefonas pats nustato naujų vietos matavimų dažnį ir judėjimo krypties prieinamumą.
 
 ## Paleidimas
@@ -24,6 +26,7 @@ Gyvam bendrinimui reikia veikiančios Cloudflare D1 duomenų bazės, susietos va
 ## Svarbiausi failai
 
 - `public/app.html` – pagrindinė programėlė.
+- `public/alignment.js` – ašies failo interpretavimas ir piketažo skaičiavimas.
 - `public/watch.html` – gyvos vietos stebėjimas pagal nuorodą.
 - `app/api/share/route.ts` – bendrinimo API.
 - `public/vendor/` – vietinės žemėlapio bibliotekų kopijos.

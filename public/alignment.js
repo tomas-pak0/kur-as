@@ -35,7 +35,7 @@
       const latitude=header.findIndex(s=>['lat','latitude','platuma'].includes(s));
       const longitude=header.findIndex(s=>['lon','lng','longitude','ilguma'].includes(s));
       if(latitude<0||longitude<0)throw Error('CSV antraštėje turi būti lat ir lon stulpeliai.');
-      return check(columns.slice(1).map(row=>[Number(row[latitude]),Number(row[longitude])]));
+      return check(columns.slice(1).map(row=>[row[latitude]?.length?Number(row[latitude]):NaN,row[longitude]?.length?Number(row[longitude]):NaN]));
     }
     throw Error('Naudok GeoJSON, GPX arba CSV failą.');
   }
