@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#111318"><meta name="description" content="Nuolat atnaujinama tavo vieta žemėlapyje.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><title>Kur aš?</title>
 <style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f7f7f8;background:#111318}*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}header{padding:16px 20px;border-bottom:1px solid #333840;display:flex;justify-content:space-between;align-items:center}h1{font-size:1.35rem;margin:0;letter-spacing:-.04em}.brand{display:flex;align-items:center;gap:12px}.brand img{width:34px;height:34px}.live{font-size:.85rem;color:#c8ccd2}main{max-width:960px;margin:auto;padding:16px}.map{width:100%;height:min(53vh,520px);min-height:280px;background:#252a30;border-radius:18px;z-index:0}.map-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;flex-wrap:wrap}.map-bar .live{font-size:.92rem}.map-shell{position:relative}.map-top-controls{position:absolute;right:12px;top:12px;z-index:400;display:flex;align-items:center;gap:8px}.map-recenter,.map-weather{font-size:.85rem;padding:9px 12px;background:#111318;border-radius:12px;white-space:nowrap}.map-weather{color:#fff;font-weight:650}.map-compass{display:inline-flex;align-items:center;justify-content:center;background:#111318;width:40px;height:38px;padding:7px;border-radius:12px}.map-compass[aria-pressed="true"]{background:#ed3948}.map-compass svg{width:24px;height:24px;display:block}.speed-pin{width:32px;height:32px;display:flex;align-items:center;justify-content:center}.map-speed{position:absolute;left:12px;bottom:22px;z-index:400;background:#111318;color:#fff;border-radius:12px;padding:9px 12px;font-weight:650;font-size:.85rem;pointer-events:none}.pace-icon{font-size:1.22em;vertical-align:-.1em;margin-right:5px}.speed-pin i{display:block;flex:0 0 19px;width:19px;height:19px;border-radius:50%;border:4px solid white;background:#ed3948;box-shadow:0 0 0 3px #111318}.speed-pin svg{width:32px;height:32px;display:block;filter:drop-shadow(0 2px 3px #111318);transition:transform .5s ease}.coords-button{padding:0;background:none;color:#fff;text-align:left;font-size:1.2rem;overflow-wrap:anywhere}.map-links{display:grid;gap:9px;margin-top:11px}.map-link-row{display:flex;align-items:center;gap:9px;flex-wrap:nowrap}.map-link-label{min-width:74px;color:#b5bbc3;font-size:.86rem}.map-links a,.map-links button{display:inline-flex;flex:0 0 48px;align-items:center;justify-content:center;width:48px;height:44px;border-radius:8px;background:#333841;color:#fff;padding:8px;text-decoration:none}.map-links img{width:26px;height:26px;display:block}.map-links a:focus-visible,.map-links button:focus-visible{outline:2px solid #fff;outline-offset:2px}.address-card:has(.address-detail[open]){grid-column:span 2}.address-detail[open]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start}.address-detail summary{cursor:pointer;font-size:1.05rem;font-weight:650;overflow-wrap:anywhere}.address-detail p{font-size:.86rem;color:#b5bbc3;line-height:1.4;margin:0;overflow-wrap:anywhere}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}.card{background:#202329;border:1px solid #373c43;border-radius:16px;padding:17px;min-height:90px}.label{display:block;color:#aab0b8;font-size:.88rem;margin-bottom:8px}.value{display:block;font-size:1.2rem;font-weight:650;overflow-wrap:anywhere}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}button{background:#ed3948;color:white;border:0;border-radius:12px;padding:14px 18px;font:inherit;font-weight:650;cursor:pointer}button.secondary{background:#32363e}button:disabled{opacity:.45;cursor:default}.note{color:#b5bbc3;font-size:.9rem;line-height:1.5}#status{color:#f4c6ca;margin:12px 0;min-height:1.5em}a{color:#ff737d}@media(max-width:650px){.cards{grid-template-columns:1fr 1fr}.coords-card,.address-card{grid-column:1/-1}.map{height:43vh}.value{font-size:1.08rem}}
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f7f7f8;background:#111318}*{box-sizing:border-box}[hidden]{display:none!important}body{margin:0}header{padding:16px 20px;border-bottom:1px solid #333840;display:flex;justify-content:space-between;align-items:center}h1{font-size:1.35rem;margin:0;letter-spacing:-.04em}.brand{display:flex;align-items:center;gap:12px}.brand img{width:34px;height:34px}.live{font-size:.85rem;color:#c8ccd2}main{max-width:960px;margin:auto;padding:16px}.map{width:100%;height:min(53vh,520px);min-height:280px;background:#252a30;border-radius:18px;z-index:0}.map-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px;flex-wrap:wrap}.map-bar .live{font-size:.92rem}.map-shell{position:relative}.map-top-controls{position:absolute;right:12px;top:12px;z-index:400;display:flex;align-items:center;gap:8px}.map-recenter,.map-weather{font-size:.85rem;padding:9px 12px;background:#111318;border-radius:12px;white-space:nowrap}.map-weather{color:#fff;font-weight:650}.map-compass{display:inline-flex;align-items:center;justify-content:center;background:#111318;width:40px;height:38px;padding:7px;border-radius:12px}.map-compass[aria-pressed="true"]{background:#ed3948}.map-compass svg{width:24px;height:24px;display:block}.speed-pin{width:32px;height:32px;display:flex;align-items:center;justify-content:center}.map-speed{position:absolute;left:12px;bottom:22px;z-index:400;background:#111318;color:#fff;border-radius:12px;padding:9px 12px;font-weight:650;font-size:.85rem;pointer-events:none}.pace-icon{font-size:1.22em;vertical-align:-.1em;margin-right:5px}.speed-pin i{display:block;flex:0 0 19px;width:19px;height:19px;border-radius:50%;border:4px solid white;background:#ed3948;box-shadow:0 0 0 3px #111318}.speed-pin svg{width:32px;height:32px;display:block;filter:drop-shadow(0 2px 3px #111318);transition:transform .5s ease}.coords-button{padding:0;background:none;color:#fff;text-align:left;font-size:1.2rem;overflow-wrap:anywhere}.map-links{display:grid;gap:9px;margin-top:11px}.map-link-row{display:flex;align-items:center;gap:9px;flex-wrap:nowrap}.map-link-label{min-width:74px;color:#b5bbc3;font-size:.86rem}.map-links a,.map-links button{display:inline-flex;flex:0 0 48px;align-items:center;justify-content:center;width:48px;height:44px;border-radius:8px;background:#333841;color:#fff;padding:8px;text-decoration:none}.map-links img{width:26px;height:26px;display:block}.map-links a:focus-visible,.map-links button:focus-visible{outline:2px solid #fff;outline-offset:2px}.address-card:has(.address-detail[open]){grid-column:span 2}.address-detail[open]{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start}.address-detail summary{cursor:pointer;font-size:1.05rem;font-weight:650;overflow-wrap:anywhere}.address-detail p{font-size:.86rem;color:#b5bbc3;line-height:1.4;margin:0;overflow-wrap:anywhere}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}.card{background:#202329;border:1px solid #373c43;border-radius:16px;padding:17px;min-height:90px}.label{display:block;color:#aab0b8;font-size:.88rem;margin-bottom:8px}.value{display:block;font-size:1.2rem;font-weight:650;overflow-wrap:anywhere}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}button{background:#ed3948;color:white;border:0;border-radius:12px;padding:14px 18px;font:inherit;font-weight:650;cursor:pointer}button.secondary{background:#32363e}button:disabled{opacity:.45;cursor:default}.note{color:#b5bbc3;font-size:.9rem;line-height:1.5}#status{color:#f4c6ca;margin:12px 0;min-height:1.5em}a{color:#ff737d}.alignment-title{font-size:1.07rem;margin:0 0 10px}.alignment-options{display:flex;gap:10px;flex-wrap:wrap;align-items:end}.alignment-options label{font-size:.88rem;color:#b5bbc3;display:grid;gap:5px}.alignment-options input{font:inherit;max-width:190px;background:#111318;color:white;border:1px solid #555c65;border-radius:8px;padding:10px}.alignment-options input[type=file]{max-width:min(100%,340px)}.station-label{color:#fff;background:#253d47;border:1px solid #70d6de;border-radius:6px;padding:2px 5px;white-space:nowrap;font:bold 11px system-ui;width:max-content}.station-label-icon{background:none;border:0}@media(max-width:650px){.cards{grid-template-columns:1fr 1fr}.coords-card,.address-card{grid-column:1/-1}.map{height:43vh}.value{font-size:1.08rem}}
 </style>
 </head>
 <body>
@@ -25,6 +25,7 @@
 <div class="card"><span class="label">Judėjimo greitis</span><span class="value"><span id="paceIcon" class="pace-icon" aria-hidden="true" hidden></span><span id="speed">–</span></span></div>
 <div class="card"><span class="label">Kryptis judant</span><span id="heading" class="value">–</span></div>
 </div>
+<section class="card" aria-label="Kelio ašis"><h2 class="alignment-title">Kelio ašis ir piketažas</h2><div class="alignment-options"><label>Ašies failas (GeoJSON, GPX arba CSV)<input id="alignmentFile" type="file" accept=".geojson,.json,.gpx,.csv,application/geo+json,text/csv,application/gpx+xml"></label><label>Pradinis piketas, metrais<input id="stationStart" type="number" step="1" min="0" value="0" inputmode="numeric"></label><button id="clearAlignment" class="secondary" type="button" hidden>Pašalinti ašį</button></div><p id="alignmentStatus" class="note">Įkelk WGS84 liniją: GeoJSON LineString, GPX maršrutą / taką arba CSV su lat,lon stulpeliais. Failas lieka šiame telefone.</p><div id="alignmentReadout" class="cards" hidden><div class="card"><span class="label">Piketažas (kas 5 m)</span><span id="stationValue" class="value">–</span></div><div class="card"><span class="label">Atstumas iki ašies</span><span id="offsetValue" class="value">–</span></div></div></section>
 <div class="actions"><button id="liveShare" class="secondary" disabled>Pradėti gyvą bendrinimą</button><button id="stopShare" class="secondary" hidden>Nutraukti bendrinimą</button><button id="copyShare" class="secondary" hidden>Kopijuoti stebėjimo nuorodą</button></div>
 <p id="shareStatus" class="note" role="status">Gyvas bendrinimas išjungtas. Kitas žmogus matys vietą tik tau jį įjungus ir perdavus nuorodą.</p>
 <div class="actions"><button id="start">Rodyti mano vietą</button><button id="stop" class="secondary" disabled>Sustabdyti</button></div>
@@ -33,6 +34,7 @@
 <script src="/vendor/leaflet/leaflet.js"></script>
 <script src="/vendor/leaflet-rotate/leaflet-rotate.umd.min.js"></script>
 <script src="/weather.js"></script>
+<script src="/alignment.js"></script>
 <script>
 const $=id=>document.getElementById(id);let watcher=null,last=null,lastAddressAt=0,lastAddressPoint=null,addressPending=false,shareSession=null,lastShareAt=0,shareBusy=false,weatherAt=0,weatherPoint=null,weatherBusy=false;
 const matched=location.hash.match(/^#watch=([a-f0-9]{64})$/);let viewerToken=matched?matched[1]:localStorage.getItem('kur-as-paired-viewer');
@@ -56,14 +58,58 @@ window.KurAsApplyNativeTelemetry=function(t){if(remoteMode)return;window.KurAsNa
 function haversine(a,b){const r=Math.PI/180,dLat=(b.latitude-a.latitude)*r,dLon=(b.longitude-a.longitude)*r;const q=Math.sin(dLat/2)**2+Math.cos(a.latitude*r)*Math.cos(b.latitude*r)*Math.sin(dLon/2)**2;return 12742000*Math.atan2(Math.sqrt(q),Math.sqrt(1-q));}
 const map=L.map('map',{zoomControl:true,zoomSnap:0,zoomDelta:.5,zoomAnimation:true,rotate:true,dragRotate:false,touchRotate:false}).setView([55.1694,23.8813],7);
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',maxZoom:19}).addTo(map);
+let alignment=null,alignmentLayer=null,nearestLine=null;
+function showAlignment(points,name,startMetres){
+ const line=KurAsAlignment.prepare(points);
+ if(alignmentLayer)alignmentLayer.remove();if(nearestLine)nearestLine.remove();
+ alignment={...line,startMetres,name};alignmentLayer=L.layerGroup().addTo(map);
+ L.polyline(points,{color:'#67d4df',weight:5,opacity:.9}).addTo(alignmentLayer);
+ const first=Math.ceil(startMetres/100)*100;
+ for(let st=first,count=0;st<=startMetres+line.total&&count<250;st+=100,count++){
+  const point=KurAsAlignment.at(line,st-startMetres);
+  L.marker(point,{interactive:false,icon:L.divIcon({className:'station-label-icon',html:'<span class="station-label">'+KurAsAlignment.station(st)+'</span>',iconSize:[45,20],iconAnchor:[22,26]})}).addTo(alignmentLayer);
+ }
+ $('clearAlignment').hidden=false;$('alignmentReadout').hidden=false;
+ $('alignmentStatus').textContent=name+' · '+Math.round(line.total)+' m · kas 100 m pažymėti piketai. Rodmuo apvalinamas kas 5 m; tikslumą riboja GPS.';
+ if(last)updateAlignment(last.coords);
+}
+function updateAlignment(c){
+ if(!alignment)return;
+ const result=KurAsAlignment.nearest(alignment,[c.latitude,c.longitude]);if(!result)return;
+ $('stationValue').textContent=KurAsAlignment.station(alignment.startMetres+result.metres);
+ $('offsetValue').textContent=Math.round(result.offset)+' m '+result.side;
+ if(!nearestLine)nearestLine=L.polyline([],{color:'#f7c85e',weight:2,dashArray:'5,5',interactive:false}).addTo(map);
+ nearestLine.setLatLngs([[c.latitude,c.longitude],result.point]);
+}
+function clearAlignment(){alignment=null;if(alignmentLayer)alignmentLayer.remove();alignmentLayer=null;if(nearestLine)nearestLine.remove();nearestLine=null;localStorage.removeItem('kur-as-alignment');$('alignmentFile').value='';$('alignmentReadout').hidden=true;$('clearAlignment').hidden=true;$('alignmentStatus').textContent='Ašis pašalinta. Įkelk GeoJSON, GPX arba CSV su WGS84 koordinatėmis.'}
+$('clearAlignment').onclick=clearAlignment;
+$('alignmentFile').onchange=async event=>{
+ const file=event.target.files[0];if(!file)return;
+ try{
+  if(file.size>1000000)throw Error('Failas per didelis (iki 1 MB).');
+  const points=KurAsAlignment.parse(await file.text(),file.name);
+  const startMetres=Number($('stationStart').value);
+  if(!Number.isInteger(startMetres)||startMetres<0||startMetres>1000000)throw Error('Pradinis piketas turi būti sveikas metrais.');
+  const saved=JSON.stringify({points,name:file.name,startMetres});
+  localStorage.setItem('kur-as-alignment',saved);
+  showAlignment(points,file.name,startMetres);
+  map.fitBounds(L.latLngBounds(points),{padding:[35,35],maxZoom:17});followMap=false;
+ }catch(e){$('alignmentStatus').textContent='Nepavyko įkelti ašies: '+e.message;event.target.value=''}
+};
+try{const saved=JSON.parse(localStorage.getItem('kur-as-alignment'));if(saved?.points){$('stationStart').value=saved.startMetres;showAlignment(saved.points,saved.name,saved.startMetres)}}catch(e){localStorage.removeItem('kur-as-alignment')}
 let pin=null,animation=null,followMap=true,smoothedSpeed=null,lastSpeedAt=0;
 let headingUp=false,lastHeading=null,lastMoving=false,resetRotation=null;
-const paceThresholds=[10,40,70,250,1000],paceMargins=[2,3,5,10,50];
-const paceModes=[['🐌','Sraigė'],['🐕','Šuo'],['🐇','Kiškis'],['🚗','Automobilis'],['✈️','Lėktuvas'],['🚀','Raketa']];
+const paceThresholds=[.5,7,25,55,130,260,600],paceMargins=[.2,1,2,3,5,10,20];
+const paceModes=[['🧘','Nejudama'],['🚶','Pėsčiomis'],['🚴','Dviratis'],['🛵','Mopedas'],['🚗','Automobilis'],['🏎️','Lenktyninis automobilis'],['✈️','Lėktuvas'],['🚀','Raketa']];
 let paceIndex=null;
 function paceFor(speed){if(speed===null)return null;const kmh=speed*3.6;if(paceIndex===null){paceIndex=paceThresholds.findIndex(t=>kmh<t);if(paceIndex<0)paceIndex=paceModes.length-1}else{while(paceIndex<paceThresholds.length&&kmh>=paceThresholds[paceIndex]+paceMargins[paceIndex])paceIndex++;while(paceIndex>0&&kmh<paceThresholds[paceIndex-1]-paceMargins[paceIndex-1])paceIndex--}return paceModes[paceIndex]}
 function showPace(mode){for(const id of ['paceIcon','mapPaceIcon']){const el=$(id);el.hidden=!mode;if(mode){el.textContent=mode[0];el.title=mode[1]}else el.textContent=''}}
+// User map interaction freezes both centering and speed-dependent zoom until recentering.
 map.on('dragstart',()=>{followMap=false});
+const mapElement=map.getContainer();
+for(const type of ['wheel','touchstart','dblclick'])mapElement.addEventListener(type,()=>{followMap=false},{passive:true});
+mapElement.addEventListener('pointerdown',e=>{if(e.target.closest('.leaflet-control-zoom'))followMap=false});
+mapElement.addEventListener('keydown',e=>{if(['+','-','=','PageUp','PageDown'].includes(e.key))followMap=false});
 map.on('rotate',()=>{$('compassNeedle').style.transform='rotate('+map.getBearing()+'deg)'});
 function resetBearing(){const start=map.getBearing(),delta=((540-start)%360)-180,at=performance.now();function step(now){const t=Math.min(1,(now-at)/450),ease=t*t*(3-2*t);map.setBearing(start+delta*ease);if(t<1)resetRotation=requestAnimationFrame(step);else resetRotation=null}resetRotation=requestAnimationFrame(step)}
 $('compass').onclick=()=>{headingUp=!headingUp;const button=$('compass');button.setAttribute('aria-pressed',String(headingUp));button.setAttribute('aria-label',headingUp?'Grąžinti šiaurę į viršų':'Judėjimo kryptis viršuje');button.title=button.getAttribute('aria-label');if(resetRotation){cancelAnimationFrame(resetRotation);resetRotation=null}if(headingUp){if(lastMoving&&lastHeading!==null)map.setHeading(lastHeading,{ease:.2,deadzone:.5});else $('status').textContent='Laukiama judėjimo krypties duomenų…'}else{map.setHeading(null);resetBearing();$('status').textContent=last?'Žemėlapio viršuje – šiaurė.':'Paspausk „Rodyti mano vietą“ ir suteik leidimą.'}};
@@ -103,7 +149,7 @@ function onPosition(p){
  $('live').textContent=remoteMode?'● Stebima vieta':'● Vieta atnaujinama';
  $('status').textContent=remoteMode?'Rodoma bendrinančio telefono pateikta vieta.':'Rodoma naujausia telefono pateikta vieta.';
  if(!remoteMode){lastMotion=m;$('liveShare').disabled=!!shareSession;sendLivePosition(c,m,p.timestamp)}
- lookupAddress(c);lookupWeather(c);updateMap(c,m);
+ lookupAddress(c);lookupWeather(c);updateMap(c,m);updateAlignment(c);
 }
 function onError(e){const msg=e.code===1?'Vietos leidimas nesuteiktas. Jį galima įjungti naršyklės nustatymuose.':e.code===2?'Vietos dabar nepavyksta nustatyti. Patikrink telefono vietos nustatymą.':'Laukiama vietos duomenų. Bandysime toliau.';$('status').textContent=msg;$('live').textContent='Vieta neatnaujinama';if(e.code===1)stop();}
 function start(){if(remoteMode)return;if(!navigator.geolocation){$('status').textContent='Ši naršyklė nepalaiko vietos nustatymo.';return}if(watcher!==null)return;watcher=navigator.geolocation.watchPosition(onPosition,onError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});$('start').disabled=true;$('stop').disabled=!!shareSession;$('status').textContent='Laukiama vietos leidimo ir pirmosios pozicijos…';$('live').textContent='Ieškoma vietos';}
@@ -141,12 +187,29 @@ function syncNativeSharing(){
   if(state==='stopping'){$('shareStatus').textContent='Bendrinimas nutraukiamas, laukiama ryšio.';nativeActive=true;return}
   nativeActive=state==='running'||window.KurAsNative.start(shareSession.editor)==='ok';
   if(!nativeActive)$('shareStatus').textContent='Foninio bendrinimo paleisti nepavyko. Vieta siunčiama tik atidarius programėlę.';
-  else showShare();
+  else updateNativeHealth();
  }catch(e){nativeActive=false;$('shareStatus').textContent='Foninis bendrinimas neprieinamas. Vieta siunčiama tik atidarius programėlę.'}
+}
+function updateNativeHealth(){
+ if(remoteMode||!shareSession||!window.KurAsNative?.health)return;
+ try{
+  const health=JSON.parse(window.KurAsNative.health(shareSession.editor));
+  if(health.state!=='running'){
+   if(health.state==='idle')syncNativeSharing();
+   else if(health.state==='stopping')$('shareStatus').textContent='Bendrinimas nutraukiamas, laukiama ryšio.';
+   return;
+  }
+  nativeActive=true;
+  const age=health.sentAt?Math.floor((Date.now()-health.sentAt)/1000):null;
+  $('shareStatus').textContent=health.error?'Nepavyko perduoti vietos: '+health.error+(age!==null?' · paskutinis perdavimas prieš '+ageLabel(age):''):
+   age===null?'Foninis bendrinimas įjungtas · laukiama pirmojo perdavimo. Patikrink Android pranešimą.':
+   'Foninis bendrinimas įjungtas · paskutinį kartą perduota prieš '+ageLabel(Math.max(0,age))+(age>30?' · duomenys pasenę':'');
+ }catch(e){$('shareStatus').textContent='Nepavyko patikrinti foninio bendrinimo būsenos.'}
 }
 window.addEventListener('kur-as-native-ready',syncNativeSharing);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&watcher!==null)$('status').textContent='Tikrinama vieta grįžus į puslapį…'});
 setInterval(()=>{if(!remoteMode&&shareSession&&last)sendLivePosition(last.coords,lastMotion,last.timestamp)},10000);
+setInterval(()=>{if(!document.hidden)updateNativeHealth()},5000);
 let lastRemoteUpdate=0,remoteBusy=false,remoteStopped=false;
 async function refreshRemote(){
  if(!remoteMode||remoteBusy||remoteStopped||document.hidden)return;

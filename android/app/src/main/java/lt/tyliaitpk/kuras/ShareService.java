@@ -22,6 +22,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.telephony.CellSignalStrength;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
@@ -51,6 +52,7 @@ public class ShareService extends Service {
     private volatile String gpsText = "Ieškoma palydovų…";
     private volatile String editor;
     private volatile boolean tracking;
+    private volatile long lastAttempt;
 
     static String status(Context context, String token) {
         android.content.SharedPreferences preferences = context.getSharedPreferences("live_share", MODE_PRIVATE);
@@ -61,6 +63,14 @@ public class ShareService extends Service {
         if (token.equals(runningToken)) return cancelling ? "stopping" : "running";
         return "idle";
     }
+    static String health(Context context, String token) {
+        android.content.SharedPreferences p = context.getSharedPreferences("live_share", MODE_PRIVATE);
+        if (!token.equals(p.getString("editor", ""))) return "{}";
+        try { return new JSONObject().put("state", status(context, token))
+            .put("sentAt", p.getLong("sent_at", 0))
+            .put("error", p.getString("last_error", "")).toString(); }
+        catch (Exception ignored) { return "{}"; }
+    }
 
     private final LocationListener listener = new LocationListener() {
         @Override public void onLocationChanged(Location location) {
@@ -70,6 +80,8 @@ public class ShareService extends Service {
                     || !previous.hasAccuracy() || !location.hasAccuracy()
                     || location.getAccuracy() <= previous.getAccuracy() * 1.5f)) {
                 lastLocation = location;
+                if (tracking && !cancelling && worker != null && !worker.isShutdown()
+                    && System.currentTimeMillis() - lastAttempt >= 9000) worker.execute(ShareService.this::sendPending);
             }
         }
         @Override public void onStatusChanged(String provider, int status, Bundle extras) { }
@@ -104,6 +116,11 @@ public class ShareService extends Service {
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent == null ? null : intent.getAction();
         String token = intent == null ? null : intent.getStringExtra(TOKEN);
+        if (intent == null) {
+            android.content.SharedPreferences saved = getSharedPreferences("live_share", MODE_PRIVATE);
+            token = saved.getString("editor", null);
+            action = saved.getBoolean("pending_stop", false) ? STOP : START;
+        }
         if (START.equals(action) && valid(token)) {
             if (token.equals(getSharedPreferences("live_share", MODE_PRIVATE).getString("editor", ""))
                 && getSharedPreferences("live_share", MODE_PRIVATE).getBoolean("pending_stop", false)) {
@@ -115,16 +132,21 @@ public class ShareService extends Service {
                 && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 stopSelf(); return START_NOT_STICKY;
             }
-            if (token.equals(editor) && tracking) return START_NOT_STICKY;
+            if (token.equals(editor) && tracking) return START_STICKY;
+            boolean newShare = !token.equals(getSharedPreferences("live_share", MODE_PRIVATE).getString("editor", ""));
             stopTracking();
             editor = token; runningToken = token; cancelling = false; lastLocation = null;
             getSharedPreferences("live_share", MODE_PRIVATE).edit().putString("editor", token)
                 .remove("stopped").remove("pending_stop").apply();
+            if (newShare) getSharedPreferences("live_share", MODE_PRIVATE).edit()
+                .remove("sent_at").remove("last_error").apply();
             try {
                 if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION, notification(false),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
                 else startForeground(NOTIFICATION, notification(false));
             } catch (SecurityException ex) {
+                getSharedPreferences("live_share", MODE_PRIVATE).edit()
+                    .putString("last_error", "Reikia vietos leidimo foniniam bendrinimui").apply();
                 runningToken = null; editor = null; stopSelf(); return START_NOT_STICKY;
             }
             startTracking();
@@ -152,7 +174,7 @@ public class ShareService extends Service {
         } else if (DISMISS.equals(action)) {
             stopSelf();
         }
-        return START_NOT_STICKY;
+        return editor != null ? START_STICKY : START_NOT_STICKY;
     }
 
     private static boolean valid(String token) { return token != null && token.matches("[a-f0-9]{64}"); }
@@ -188,7 +210,10 @@ public class ShareService extends Service {
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentTitle("Kur aš? · gyva vieta")
             .setContentText(stopping ? "Nutraukiamas bendrinimas · laukiama ryšio" :
-                "Vieta bendrinama ir užrakintame telefone")
+                getSharedPreferences("live_share", MODE_PRIVATE).getLong("sent_at", 0) > 0
+                    ? "Paskutinį kartą perduota " + java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(
+                        new java.util.Date(getSharedPreferences("live_share", MODE_PRIVATE).getLong("sent_at", 0)))
+                    : "Laukiama pirmojo sėkmingo perdavimo")
             .setContentIntent(content).setOngoing(true)
             .setCategory(Notification.CATEGORY_SERVICE);
         if (!stopping) builder.addAction(android.R.drawable.ic_media_pause, "Sustabdyti", stopAction);
@@ -217,6 +242,7 @@ public class ShareService extends Service {
         }
         Location location = lastLocation;
         if (!tracking || location == null) return;
+        lastAttempt = System.currentTimeMillis();
         try {
             JSONObject data = new JSONObject().put("action", "update").put("token", token)
                 .put("latitude", location.getLatitude()).put("longitude", location.getLongitude())
@@ -225,10 +251,19 @@ public class ShareService extends Service {
                 .put("heading", location.hasBearing() ? location.getBearing() : JSONObject.NULL)
                 .put("measuredAt", Math.min(System.currentTimeMillis(), Math.max(0, location.getTime())))
                 .put("battery", battery()).put("gps", gpsText).put("network", network());
-            if (post(data) == 410 && token.equals(editor)) {
+            int code = post(data);
+            if (code >= 200 && code < 300) {
+                getSharedPreferences("live_share", MODE_PRIVATE).edit().putLong("sent_at", System.currentTimeMillis())
+                    .remove("last_error").apply();
+                updateNotification(false);
+            } else if (code == 410 && token.equals(editor)) {
                 cancelling = true; stopTracking(); updateNotification(true);
+            } else {
+                getSharedPreferences("live_share", MODE_PRIVATE).edit().putString("last_error", "Serveris: " + code).apply();
             }
-        } catch (Exception ignored) { /* The next interval retries with the latest location. */ }
+        } catch (Exception error) {
+            getSharedPreferences("live_share", MODE_PRIVATE).edit().putString("last_error", "Nepavyko susisiekti su serveriu").apply();
+        }
     }
 
     private String battery() {
@@ -262,6 +297,14 @@ public class ShareService extends Service {
     }
 
     private int post(JSONObject data) throws Exception {
+        PowerManager manager = (PowerManager) getSystemService(POWER_SERVICE);
+        PowerManager.WakeLock lock = manager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "KurAs:LocationUpload");
+        lock.acquire(25000);
+        try { return postAwake(data); }
+        finally { if (lock.isHeld()) lock.release(); }
+    }
+
+    private int postAwake(JSONObject data) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(API).openConnection();
         try {
             connection.setRequestMethod("POST");

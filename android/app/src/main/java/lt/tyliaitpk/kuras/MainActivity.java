@@ -119,6 +119,10 @@ public class MainActivity extends Activity {
                     result.confirm(ShareService.status(MainActivity.this, defaultValue));
                     return true;
                 }
+                if ("kuras:background:health".equals(message) && validEditor(defaultValue)) {
+                    result.confirm(ShareService.health(MainActivity.this, defaultValue));
+                    return true;
+                }
                 if ("kuras:background:start".equals(message) && validEditor(defaultValue)) {
                     if (!hasLocationPermission()) { result.confirm("permission"); return true; }
                     try {
@@ -212,7 +216,8 @@ public class MainActivity extends Activity {
     private void readyBridge() {
         webView.evaluateJavascript("window.KurAsNative={start:function(t){return prompt('kuras:background:start',t)},"
             + "stop:function(t){return prompt('kuras:background:stop',t)},"
-            + "status:function(t){return prompt('kuras:background:status',t)}};"
+            + "status:function(t){return prompt('kuras:background:status',t)},"
+            + "health:function(t){return prompt('kuras:background:health',t)}};"
             + "window.dispatchEvent(new Event('kur-as-native-ready'));", null);
     }
     private void openExternal(Uri uri) {
