@@ -6,6 +6,8 @@ Telefono Android dalis į tos pačios sąsajos korteles papildomai įrašo matom
 
 0.4.0 versijoje paslauga, kai sistema ją nutraukia, prašo automatinio atkūrimo ir išsaugo paskutinio sėkmingo perdavimo laiką. 0.4.1 versijoje pridėtas failų pasirinkimo langas LandXML ašims įkelti tiesiai iš telefono. Ekrane ir nuolatiniame Android pranešime galima tikrinti, ar duomenys iš tiesų pasiekė serverį. Telefonas gali apriboti foninį GPS ir tinklą taupydamas energiją; jei siuntimas ilgai neatnaujinamas, telefono programėlės baterijos nustatymuose pasirinkite neribojamą veikimą. Po telefono perkrovimo ar priverstinio sustabdymo programėlę reikia atidaryti iš naujo ir patikrinti siuntimo būseną.
 
+0.4.2 versijoje Android dokumentų parinkiklis rodo visus dokumentus, nes skirtingos failų programos XML dokumentus priskiria skirtingiems tipams. Pasirinkus failą programėlė patikrina jo plėtinį ir LandXML turinį. Ieškokite failo telefono „Failai“ / „Atsisiuntimai“ aplanke; programėlė neskaito pasirinktų failų iš kito telefono.
+
 Paspaudus „Pradėti gyvą bendrinimą“ sukuriama stebėjimo nuoroda į `/app.html#watch=…`. Kitas asmuo gali atverti ją įdiegtoje „Kur aš?“ programėlėje arba naršyklėje: ta pati pagrindinė sąsaja rodo bendrinančio telefono vietą, greitį, kryptį, tikslumą, bateriją, GPS ir tinklo duomenis. Adresas bei oras gaunami pagal bendrinamas koordinates. Susiejimas išsaugomas stebėtojo telefone, kol jis paspaudžia „Grįžti į savo vietą“ arba bendrintojas nutraukia bendrinimą. Senesnės `/watch.html#…` nuorodos taip pat nukreipiamos į pilną stebėjimo vaizdą. Be įdiegto APK nuoroda veikia naršyklėje; Android patikrina svetainės sąsają su konkretaus APK parašu, prieš atidarydamas nuorodą programėlėje.
 
 ## Įdiegimas ir paleidimas

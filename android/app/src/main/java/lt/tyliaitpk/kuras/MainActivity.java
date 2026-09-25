@@ -118,7 +118,13 @@ public class MainActivity extends Activity {
                 if (pendingFiles != null) pendingFiles.onReceiveValue(null);
                 pendingFiles = callback;
                 try {
-                    startActivityForResult(params.createIntent(), FILE_REQUEST);
+                    // Document providers may report XML as text/plain or octet-stream.
+                    // Let the app validate the chosen file instead of filtering it here.
+                    Intent choose = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    choose.addCategory(Intent.CATEGORY_OPENABLE);
+                    choose.setType("*/*");
+                    choose.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    startActivityForResult(choose, FILE_REQUEST);
                 } catch (ActivityNotFoundException ex) {
                     pendingFiles.onReceiveValue(null);
                     pendingFiles = null;
