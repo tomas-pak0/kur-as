@@ -26,6 +26,7 @@ import android.view.WindowInsets;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
 import android.webkit.JsPromptResult;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -39,7 +40,9 @@ public class MainActivity extends Activity {
     private static final String SITE = "https://kur-as.t0m45-p4k0.chatgpt.site";
     private static final int PERMISSIONS_REQUEST = 12;
     private static final int NOTIFICATION_REQUEST = 13;
+    private static final int FILE_REQUEST = 14;
     private WebView webView;
+    private ValueCallback<Uri[]> pendingFiles;
     private LocationManager locationManager;
     private TelephonyManager telephonyManager;
     private ConnectivityManager connectivityManager;
@@ -110,6 +113,18 @@ public class MainActivity extends Activity {
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback,
+                                                      FileChooserParams params) {
+                if (pendingFiles != null) pendingFiles.onReceiveValue(null);
+                pendingFiles = callback;
+                try {
+                    startActivityForResult(params.createIntent(), FILE_REQUEST);
+                } catch (ActivityNotFoundException ex) {
+                    pendingFiles.onReceiveValue(null);
+                    pendingFiles = null;
+                }
+                return true;
+            }
             @Override public boolean onJsPrompt(WebView view, String url, String message,
                                                 String defaultValue, JsPromptResult result) {
                 Uri source = Uri.parse(url);
@@ -183,6 +198,15 @@ public class MainActivity extends Activity {
             }
         });
         webView.loadUrl(startUrl(getIntent()));
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != FILE_REQUEST) return;
+        if (pendingFiles != null) {
+            pendingFiles.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+            pendingFiles = null;
+        }
     }
 
     private String startUrl(Intent intent) {
@@ -331,6 +355,7 @@ public class MainActivity extends Activity {
         else super.onBackPressed();
     }
     @Override protected void onDestroy() {
+        if (pendingFiles != null) { pendingFiles.onReceiveValue(null); pendingFiles = null; }
         if (webView != null) webView.destroy();
         super.onDestroy();
     }
