@@ -89,15 +89,17 @@ function showAlignment(points,name,startMetres){
  }
  stationVisibility();
  $('clearAlignment').hidden=false;$('alignmentReadout').hidden=false;
- $('alignmentStatus').textContent=name+' · '+Math.round(line.total)+' m · kas 100 m pažymėti piketai. Piketažas apvalinamas iki 1 m; faktinį tikslumą riboja telefono vietos matavimas.';
+ $('alignmentStatus').textContent=name+' · '+Math.round(line.total)+' m · kas 100 m pažymėti piketai. Piketažas apvalinamas iki 1 m; atstumas iki ašies, kai jis mažesnis nei 15 m, rodomas su dviem skaitmenimis po kablelio. Faktinį tikslumą riboja telefono vietos matavimas.';
  if(last)updateAlignment(last.coords);
 }
 function updateAlignment(c){
  if(!alignment)return;
  const result=KurAsAlignment.nearest(alignment,[c.latitude,c.longitude]);if(!result)return;
  const station='PK '+KurAsAlignment.station(alignment.startMetres+result.metres,stationGroup());
- const side=result.offset<.5?'ašyje':result.side==='dešinėje'?'d':'k';
- const offset=Math.round(result.offset)+' m'+(side==='ašyje'?' (ašyje)':' ('+side+')');
+ const nearAxis=result.offset<15;
+ const distance=nearAxis?result.offset.toFixed(2).replace('.',','):String(Math.round(result.offset));
+ const side=result.offset<(nearAxis?.005:.5)?'ašyje':result.side==='dešinėje'?'d':'k';
+ const offset=distance+' m'+(side==='ašyje'?' (ašyje)':' ('+side+')');
  $('stationValue').textContent=station;
  $('offsetValue').textContent=offset;
  if(pin){
