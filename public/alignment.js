@@ -164,6 +164,6 @@
     const span=line.lengths[i]-line.lengths[i-1],t=span?(d-line.lengths[i-1])/span:0;
     return line.points[i-1].map((n,j)=>n+t*(line.points[i][j]-n));
   }
-  function station(metres){const v=Math.round(metres/5)*5;return Math.floor(v/100)+'+'+String(v%100).padStart(2,'0')}
+  function station(metres,group=100){const v=Math.round(metres/5)*5,g=group===1000?1000:100;return Math.floor(v/g)+'+'+String(v%g).padStart(g===1000?3:2,'0')}
   root.KurAsAlignment={parse,prepare,nearest,at,station,lks94};
 })(typeof window==='undefined'?globalThis:window);
