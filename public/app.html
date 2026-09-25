@@ -28,7 +28,7 @@
 <div class="actions"><button id="liveShare" class="secondary" disabled>Pradėti gyvą bendrinimą</button><button id="stopShare" class="secondary" hidden>Nutraukti bendrinimą</button><button id="copyShare" class="secondary" hidden>Kopijuoti stebėjimo nuorodą</button></div>
 <p id="shareStatus" class="note" role="status">Gyvas bendrinimas išjungtas. Kitas žmogus matys vietą tik tau jį įjungus ir perdavus nuorodą.</p>
 <div class="actions"><button id="start">Rodyti mano vietą</button><button id="stop" class="secondary" disabled>Sustabdyti</button></div>
-<p class="note">Žemėlapio žymeklis juda sklandžiai, tačiau naujus GPS matavimus pateikia telefonas pagal savo galimybes. Vieta kitiems siunčiama tik įjungus gyvą bendrinimą. Paspaudus „Nutraukti bendrinimą“, ankstesnė nuoroda nustoja veikti. Vieta atnaujinama, kol šis puslapis atidarytas ir naršyklė leidžia jam veikti. Užrakinus telefoną ar perėjus į kitą programėlę atnaujinimai gali sustoti. Žemėlapiui ir orų duomenims reikia interneto. Apytikslis vietovės oras gaunamas iš <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>; tai nėra telefono išmatuotos sąlygos. Adresas yra apytikslis: jo paieškai koordinatės perduodamos „OpenStreetMap“ adresų paslaugai. Baterijos rodmuo priklauso nuo naršyklės. Palydovų skaičių ir jų signalo stiprumą (dB-Hz) rodys „Android“ programėlė. Naršyklė šių rodmenų ir mobiliojo signalo dBm nepateikia.</p>
+<p class="note">Žemėlapio žymeklis juda sklandžiai, tačiau naujus GPS matavimus pateikia telefonas pagal savo galimybes. Vieta kitiems siunčiama tik įjungus gyvą bendrinimą. „Android“ programėlė tuomet rodo pranešimą ir siunčia vietą net užrakintame telefone; bendrinimą galima nutraukti ekrane arba pranešime. Naršyklėje vieta atnaujinama, kol puslapis atidarytas ir naršyklė leidžia jam veikti. Žemėlapiui ir orų duomenims reikia interneto. Apytikslis vietovės oras gaunamas iš <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>; tai nėra telefono išmatuotos sąlygos. Adresas yra apytikslis: jo paieškai koordinatės perduodamos „OpenStreetMap“ adresų paslaugai. Baterijos rodmuo priklauso nuo naršyklės. Palydovų skaičių ir jų signalo stiprumą (dB-Hz) rodys „Android“ programėlė. Naršyklė šių rodmenų ir mobiliojo signalo dBm nepateikia.</p>
 </main>
 <script src="/vendor/leaflet/leaflet.js"></script>
 <script src="/vendor/leaflet-rotate/leaflet-rotate.umd.min.js"></script>
@@ -106,16 +106,16 @@ function onPosition(p){
  lookupAddress(c);lookupWeather(c);updateMap(c,m);
 }
 function onError(e){const msg=e.code===1?'Vietos leidimas nesuteiktas. Jį galima įjungti naršyklės nustatymuose.':e.code===2?'Vietos dabar nepavyksta nustatyti. Patikrink telefono vietos nustatymą.':'Laukiama vietos duomenų. Bandysime toliau.';$('status').textContent=msg;$('live').textContent='Vieta neatnaujinama';if(e.code===1)stop();}
-function start(){if(remoteMode)return;if(!navigator.geolocation){$('status').textContent='Ši naršyklė nepalaiko vietos nustatymo.';return}if(watcher!==null)return;watcher=navigator.geolocation.watchPosition(onPosition,onError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});$('start').disabled=true;$('stop').disabled=false;$('status').textContent='Laukiama vietos leidimo ir pirmosios pozicijos…';$('live').textContent='Ieškoma vietos';}
+function start(){if(remoteMode)return;if(!navigator.geolocation){$('status').textContent='Ši naršyklė nepalaiko vietos nustatymo.';return}if(watcher!==null)return;watcher=navigator.geolocation.watchPosition(onPosition,onError,{enableHighAccuracy:true,maximumAge:0,timeout:20000});$('start').disabled=true;$('stop').disabled=!!shareSession;$('status').textContent='Laukiama vietos leidimo ir pirmosios pozicijos…';$('live').textContent='Ieškoma vietos';}
 function stop(){if(watcher!==null)navigator.geolocation.clearWatch(watcher);watcher=null;$('start').disabled=false;$('stop').disabled=true;$('live').textContent='Atnaujinimas sustabdytas';$('status').textContent='Vietos atnaujinimas sustabdytas.';}
 $('start').onclick=start;$('stop').onclick=stop;
 const saved=localStorage.getItem('kur-as-live-share');
 try{if(!remoteMode&&saved){const data=JSON.parse(saved);if(/^[a-f0-9]{64}$/.test(data.editor)&&/^[a-f0-9]{64}$/.test(data.viewer)){shareSession=data;showShare();start();}}}catch(e){localStorage.removeItem('kur-as-live-share')}
-function showShare(){const active=!!shareSession;$('liveShare').hidden=active;$('stopShare').hidden=!active;$('copyShare').hidden=!active;$('shareStatus').textContent=active?'Gyvas bendrinimas įjungtas. Nuorodą turintis žmogus matys paskutinę pateiktą vietą, kol bendrinimą nutrauksi. Jei naršyklė sustabdys vietos atnaujinimą, kitas žmogus matys paskutinio atnaujinimo laiką.':'Gyvas bendrinimas išjungtas.';}
+function showShare(){const active=!!shareSession;$('liveShare').hidden=active;$('stopShare').hidden=!active;$('copyShare').hidden=!active;$('stop').disabled=active||watcher===null;$('shareStatus').textContent=active?(window.KurAsNative?'Gyvas bendrinimas įjungtas. Android pranešimas leidžia jį sustabdyti, o vieta siunčiama užrakinus telefoną.':'Gyvas bendrinimas įjungtas. Naršyklėje atnaujinimai gali sustoti, kai telefonas užrakinamas.'):'Gyvas bendrinimas išjungtas.';}
 async function shareRequest(body){const response=await fetch('/api/share',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),cache:'no-store'});const data=await response.json();if(!response.ok)throw new Error(data.error||'Nepavyko susisiekti');return data}
-let lastMotion=null;
+let lastMotion=null,nativeActive=false;
 async function sendLivePosition(c,m,measuredAt){
- if(remoteMode||!shareSession||shareBusy||Date.now()-lastShareAt<10000)return;
+ if(remoteMode||nativeActive||!shareSession||shareBusy||Date.now()-lastShareAt<10000)return;
  shareBusy=true;
  try{
   await shareRequest({action:'update',token:shareSession.editor,latitude:c.latitude,longitude:c.longitude,
@@ -125,11 +125,26 @@ async function sendLivePosition(c,m,measuredAt){
  }catch(e){$('shareStatus').textContent='Bendrinimo atnaujinti nepavyko: '+e.message}
  finally{shareBusy=false}
 }
-$('liveShare').onclick=async()=>{if(!last)return;$('liveShare').disabled=true;try{const data=await shareRequest({action:'create'});shareSession=data;localStorage.setItem('kur-as-live-share',JSON.stringify(data));showShare();lastShareAt=0;await sendLivePosition(last.coords,lastMotion,last.timestamp);await copyViewer();}catch(e){$('shareStatus').textContent='Bendrinimo pradėti nepavyko: '+e.message; if(!shareSession)$('liveShare').disabled=false}};
+$('liveShare').onclick=async()=>{if(!last)return;$('liveShare').disabled=true;try{const data=await shareRequest({action:'create'});shareSession=data;localStorage.setItem('kur-as-live-share',JSON.stringify(data));showShare();lastShareAt=0;await sendLivePosition(last.coords,lastMotion,last.timestamp);syncNativeSharing();await copyViewer();}catch(e){$('shareStatus').textContent='Bendrinimo pradėti nepavyko: '+e.message; if(!shareSession)$('liveShare').disabled=false}};
 const viewerUrl=()=>location.origin+'/app.html#watch='+shareSession.viewer;
 async function copyViewer(){if(!shareSession)return;try{if(navigator.share){await navigator.share({title:'Mano gyva vieta',url:viewerUrl()});return}await navigator.clipboard.writeText(viewerUrl());$('shareStatus').textContent='Stebėjimo nuoroda nukopijuota. Ja pasidalyk tik su norimu žmogumi.'}catch(e){if(e.name!=='AbortError')$('shareStatus').textContent='Nuorodos bendrinti nepavyko';}}
 $('copyShare').onclick=copyViewer;
-$('stopShare').onclick=async()=>{if(!shareSession)return;$('stopShare').disabled=true;try{await shareRequest({action:'stop',token:shareSession.editor});localStorage.removeItem('kur-as-live-share');shareSession=null;showShare();$('liveShare').disabled=!last;}catch(e){$('shareStatus').textContent='Nepavyko nutraukti bendrinimo: '+e.message}finally{$('stopShare').disabled=false}};
+$('stopShare').onclick=async()=>{if(!shareSession)return;$('stopShare').disabled=true;try{await shareRequest({action:'stop',token:shareSession.editor});if(window.KurAsNative)window.KurAsNative.stop(shareSession.editor);nativeActive=false;localStorage.removeItem('kur-as-live-share');shareSession=null;showShare();$('liveShare').disabled=!last;}catch(e){$('shareStatus').textContent='Nepavyko nutraukti bendrinimo: '+e.message}finally{$('stopShare').disabled=false}};
+function syncNativeSharing(){
+ if(remoteMode||!shareSession||!window.KurAsNative)return;
+ try{
+  const state=window.KurAsNative.status(shareSession.editor);
+  if(state==='stopped'){
+   localStorage.removeItem('kur-as-live-share');shareSession=null;nativeActive=false;showShare();
+   $('liveShare').disabled=!last;$('shareStatus').textContent='Bendrinimas sustabdytas telefono pranešime.';return;
+  }
+  if(state==='stopping'){$('shareStatus').textContent='Bendrinimas nutraukiamas, laukiama ryšio.';nativeActive=true;return}
+  nativeActive=state==='running'||window.KurAsNative.start(shareSession.editor)==='ok';
+  if(!nativeActive)$('shareStatus').textContent='Foninio bendrinimo paleisti nepavyko. Vieta siunčiama tik atidarius programėlę.';
+  else showShare();
+ }catch(e){nativeActive=false;$('shareStatus').textContent='Foninis bendrinimas neprieinamas. Vieta siunčiama tik atidarius programėlę.'}
+}
+window.addEventListener('kur-as-native-ready',syncNativeSharing);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&watcher!==null)$('status').textContent='Tikrinama vieta grįžus į puslapį…'});
 setInterval(()=>{if(!remoteMode&&shareSession&&last)sendLivePosition(last.coords,lastMotion,last.timestamp)},10000);
 let lastRemoteUpdate=0,remoteBusy=false,remoteStopped=false;
