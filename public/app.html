@@ -74,7 +74,7 @@ function showAlignment(points,name,startMetres){
  const first=Math.ceil(startMetres/100)*100;
  for(let st=first,count=0;st<=startMetres+line.total&&count<250;st+=100,count++){
   const point=KurAsAlignment.at(line,st-startMetres);
-  L.marker(point,{interactive:false,icon:L.divIcon({className:'station-label-icon',html:'<span class="station-label">'+KurAsAlignment.station(st,stationGroup())+'</span>',iconSize:[55,20],iconAnchor:[27,26]})}).addTo(stationLayer);
+  L.marker(point,{interactive:false,icon:L.divIcon({className:'station-label-icon',html:'<span class="station-label">PK '+KurAsAlignment.station(st,stationGroup())+'</span>',iconSize:[75,20],iconAnchor:[37,26]})}).addTo(stationLayer);
  }
  stationVisibility();
  $('clearAlignment').hidden=false;$('alignmentReadout').hidden=false;
@@ -84,7 +84,7 @@ function showAlignment(points,name,startMetres){
 function updateAlignment(c){
  if(!alignment)return;
  const result=KurAsAlignment.nearest(alignment,[c.latitude,c.longitude]);if(!result)return;
- const station=KurAsAlignment.station(alignment.startMetres+result.metres,stationGroup());
+ const station='PK '+KurAsAlignment.station(alignment.startMetres+result.metres,stationGroup());
  const side=result.offset<.5?'ašyje':result.side==='dešinėje'?'d':'k';
  const offset=Math.round(result.offset)+' m'+(side==='ašyje'?' (ašyje)':' ('+side+')');
  $('stationValue').textContent=station;
