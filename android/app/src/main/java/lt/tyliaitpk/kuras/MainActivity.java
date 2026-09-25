@@ -232,6 +232,8 @@ public class MainActivity extends Activity {
             pendingOrigin = null;
         }
         startTelemetry();
+        if (pageReady) webView.evaluateJavascript(
+            "window.dispatchEvent(new Event('kur-as-native-ready'));", null);
     }
 
     private void startTelemetry() {
