@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
+import android.webkit.JsPromptResult;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -37,6 +38,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
     private static final String SITE = "https://kur-as.t0m45-p4k0.chatgpt.site";
     private static final int PERMISSIONS_REQUEST = 12;
+    private static final int NOTIFICATION_REQUEST = 13;
     private WebView webView;
     private LocationManager locationManager;
     private TelephonyManager telephonyManager;
@@ -103,10 +105,41 @@ public class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 pageReady = trusted(Uri.parse(url));
+                if (pageReady && "/app.html".equals(Uri.parse(url).getPath())) readyBridge();
                 showTelemetry();
             }
         });
         webView.setWebChromeClient(new WebChromeClient() {
+            @Override public boolean onJsPrompt(WebView view, String url, String message,
+                                                String defaultValue, JsPromptResult result) {
+                Uri source = Uri.parse(url);
+                if (!trusted(source) || !"/app.html".equals(source.getPath()))
+                    return super.onJsPrompt(view, url, message, defaultValue, result);
+                if ("kuras:background:status".equals(message) && validEditor(defaultValue)) {
+                    result.confirm(ShareService.status(MainActivity.this, defaultValue));
+                    return true;
+                }
+                if ("kuras:background:start".equals(message) && validEditor(defaultValue)) {
+                    if (!hasLocationPermission()) { result.confirm("permission"); return true; }
+                    try {
+                        Intent service = new Intent(MainActivity.this, ShareService.class)
+                            .setAction(ShareService.START).putExtra(ShareService.TOKEN, defaultValue);
+                        startForegroundService(service);
+                        result.confirm("ok");
+                        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                            != PackageManager.PERMISSION_GRANTED)
+                            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, NOTIFICATION_REQUEST);
+                    } catch (SecurityException | IllegalStateException ex) { result.confirm("error"); }
+                    return true;
+                }
+                if ("kuras:background:stop".equals(message) && validEditor(defaultValue)) {
+                    startService(new Intent(MainActivity.this, ShareService.class)
+                        .setAction(ShareService.DISMISS).putExtra(ShareService.TOKEN, defaultValue));
+                    result.confirm("ok");
+                    return true;
+                }
+                return super.onJsPrompt(view, url, message, defaultValue, result);
+            }
             @Override public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
                 if (!trusted(Uri.parse(origin))) { callback.invoke(origin, false, false); return; }
                 if (hasLocationPermission()) {
@@ -174,6 +207,13 @@ public class MainActivity extends Activity {
     private boolean trusted(Uri uri) {
         return "https".equals(uri.getScheme()) && "kur-as.t0m45-p4k0.chatgpt.site".equals(uri.getHost())
             && uri.getPort() == -1;
+    }
+    private boolean validEditor(String token) { return token != null && token.matches("[a-f0-9]{64}"); }
+    private void readyBridge() {
+        webView.evaluateJavascript("window.KurAsNative={start:function(t){return prompt('kuras:background:start',t)},"
+            + "stop:function(t){return prompt('kuras:background:stop',t)},"
+            + "status:function(t){return prompt('kuras:background:status',t)}};"
+            + "window.dispatchEvent(new Event('kur-as-native-ready'));", null);
     }
     private void openExternal(Uri uri) {
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
@@ -247,6 +287,13 @@ public class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         if (webView != null) webView.onResume();
+        android.content.SharedPreferences sharing = getSharedPreferences("live_share", MODE_PRIVATE);
+        if (sharing.getBoolean("pending_stop", false) && hasLocationPermission()) {
+            try { startForegroundService(new Intent(this, ShareService.class).setAction(ShareService.STOP)); }
+            catch (SecurityException | IllegalStateException ignored) { }
+        }
+        if (pageReady) webView.evaluateJavascript(
+            "window.dispatchEvent(new Event('kur-as-native-ready'));", null);
         if (locationManager != null && hasLocationPermission()) startTelemetry();
         if (connectivityManager != null && networkCallback == null) {
             networkCallback = new ConnectivityManager.NetworkCallback() {
