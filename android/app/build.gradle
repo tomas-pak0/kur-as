@@ -2,16 +2,38 @@ plugins { id 'com.android.application' }
 
 android {
     namespace 'lt.tyliaitpk.kuras'
-    compileSdk 35
+    compileSdk 36
+    buildToolsVersion "36.0.0"
     defaultConfig {
         applicationId 'lt.tyliaitpk.kuras'
         minSdk 26
-        targetSdk 35
-        versionCode 9
-        versionName '0.4.2'
+        targetSdk 36
+        versionCode 14
+        versionName '0.5.7'
+        testInstrumentationRunner 'lt.tyliaitpk.kuras.SmokeInstrumentation'
     }
+    signingConfigs {
+        release {
+            if (System.getenv('KURAS_KEYSTORE')) {
+                storeFile file(System.getenv('KURAS_KEYSTORE'))
+                storePassword System.getenv('KURAS_KEY_PASSWORD')
+                keyAlias 'kuras-upload'
+                keyPassword System.getenv('KURAS_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes { release { signingConfig signingConfigs.release } }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Distribution uses the retained key. CI can produce unsigned candidates for local signing.
+gradle.taskGraph.whenReady { graph ->
+    if (graph.allTasks.any { it.name in ['assembleRelease', 'bundleRelease'] }
+        && (!System.getenv('KURAS_KEYSTORE') || !System.getenv('KURAS_KEY_PASSWORD'))
+        && !(System.getenv('GITHUB_ACTIONS') == 'true' && System.getenv('KURAS_UNSIGNED_CI') == '1')) {
+        throw new GradleException('Release signing requires KURAS_KEYSTORE and KURAS_KEY_PASSWORD. Reuse the existing Kur-as upload key.')
     }
 }

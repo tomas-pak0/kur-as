@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.telephony.CellSignalStrength;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
@@ -53,6 +54,11 @@ public class ShareService extends Service {
     private volatile String editor;
     private volatile boolean tracking;
     private volatile long lastAttempt;
+    private PowerManager.WakeLock trackingLock;
+    private long lockRenewedAt;
+    private ConnectivityManager.NetworkCallback networkCallback;
+    private static final long LOCK_TIMEOUT = 10 * 60 * 1000L;
+    static final String INITIAL_LOCATION = "initial_location";
 
     static String status(Context context, String token) {
         android.content.SharedPreferences preferences = context.getSharedPreferences("live_share", MODE_PRIVATE);
@@ -68,6 +74,9 @@ public class ShareService extends Service {
         if (!token.equals(p.getString("editor", ""))) return "{}";
         try { return new JSONObject().put("state", status(context, token))
             .put("sentAt", p.getLong("sent_at", 0))
+            .put("measuredAt", p.getLong("measured_at", 0))
+            .put("notifications", ((NotificationManager) context.getSystemService(NOTIFICATION_SERVICE)).areNotificationsEnabled())
+            .put("batteryUnrestricted", ((PowerManager) context.getSystemService(POWER_SERVICE)).isIgnoringBatteryOptimizations(context.getPackageName()))
             .put("error", p.getString("last_error", "")).toString(); }
         catch (Exception ignored) { return "{}"; }
     }
@@ -106,11 +115,21 @@ public class ShareService extends Service {
     @Override public void onCreate() {
         super.onCreate();
         locations = (LocationManager) getSystemService(LOCATION_SERVICE);
+        PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
+        trackingLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "KurAs:LiveSharing");
+        trackingLock.setReferenceCounted(false);
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         manager.createNotificationChannel(new NotificationChannel(
-            CHANNEL, "Vietos bendrinimas", NotificationManager.IMPORTANCE_LOW));
+            CHANNEL, NativeStrings.text(this, 0), NotificationManager.IMPORTANCE_LOW));
         worker = Executors.newSingleThreadScheduledExecutor();
         worker.scheduleWithFixedDelay(this::sendPending, 0, 10, TimeUnit.SECONDS);
+        networkCallback = new ConnectivityManager.NetworkCallback() {
+            @Override public void onAvailable(Network network) { queueSend(); }
+            @Override public void onCapabilitiesChanged(Network network, NetworkCapabilities caps) {
+                if (caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) queueSend();
+            }
+        };
+        ((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).registerDefaultNetworkCallback(networkCallback);
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
@@ -132,14 +151,24 @@ public class ShareService extends Service {
                 && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 stopSelf(); return START_NOT_STICKY;
             }
-            if (token.equals(editor) && tracking) return START_STICKY;
+            if (token.equals(editor) && tracking) {
+                renewTrackingLock();
+                return START_STICKY;
+            }
             boolean newShare = !token.equals(getSharedPreferences("live_share", MODE_PRIVATE).getString("editor", ""));
             stopTracking();
-            editor = token; runningToken = token; cancelling = false; lastLocation = null;
+            editor = token; runningToken = token; cancelling = false; lastLocation = null; lastAttempt = 0;
+            if (intent != null) {
+                Location initial = Build.VERSION.SDK_INT >= 33
+                    ? intent.getParcelableExtra(INITIAL_LOCATION, Location.class)
+                    : intent.getParcelableExtra(INITIAL_LOCATION);
+                if (initial != null && System.currentTimeMillis() - initial.getTime() < 120000)
+                    lastLocation = initial;
+            }
             getSharedPreferences("live_share", MODE_PRIVATE).edit().putString("editor", token)
                 .remove("stopped").remove("pending_stop").apply();
             if (newShare) getSharedPreferences("live_share", MODE_PRIVATE).edit()
-                .remove("sent_at").remove("last_error").apply();
+                .remove("sent_at").remove("measured_at").remove("last_error").apply();
             try {
                 if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIFICATION, notification(false),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION);
@@ -150,6 +179,7 @@ public class ShareService extends Service {
                 runningToken = null; editor = null; stopSelf(); return START_NOT_STICKY;
             }
             startTracking();
+            queueSend();
         } else if (STOP.equals(action)) {
             boolean alreadyRunning = editor != null;
             if (editor == null) editor = getSharedPreferences("live_share", MODE_PRIVATE).getString("editor", null);
@@ -181,6 +211,7 @@ public class ShareService extends Service {
 
     private void startTracking() {
         tracking = true;
+        renewTrackingLock();
         try { locations.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, listener, Looper.getMainLooper()); }
         catch (SecurityException | IllegalArgumentException ignored) { }
         try { locations.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 1000, 0, listener, Looper.getMainLooper()); }
@@ -192,11 +223,35 @@ public class ShareService extends Service {
     }
 
     private void stopTracking() {
-        if (!tracking) return;
+        boolean wasTracking = tracking;
         tracking = false;
+        if (trackingLock != null) {
+            synchronized (trackingLock) { if (trackingLock.isHeld()) trackingLock.release(); }
+        }
+        if (!wasTracking) return;
         try { locations.removeUpdates(listener); } catch (SecurityException ignored) { }
         try { locations.unregisterGnssStatusCallback(gnss); }
         catch (IllegalArgumentException | SecurityException ignored) { }
+    }
+
+    // Renew a bounded lock only while the user has enabled live sharing.
+    private void renewTrackingLock() {
+        synchronized (trackingLock) {
+            if (!tracking || cancelling) return;
+            long now = SystemClock.elapsedRealtime();
+            if (!trackingLock.isHeld() || now - lockRenewedAt >= LOCK_TIMEOUT / 2) {
+                trackingLock.acquire(LOCK_TIMEOUT);
+                lockRenewedAt = now;
+            }
+        }
+    }
+
+    private void queueSend() {
+        ScheduledExecutorService executor = worker;
+        if (executor != null && !executor.isShutdown()) {
+            try { executor.execute(this::sendPending); }
+            catch (java.util.concurrent.RejectedExecutionException ignored) { }
+        }
     }
 
     private Notification notification(boolean stopping) {
@@ -207,16 +262,17 @@ public class ShareService extends Service {
         PendingIntent stopAction = PendingIntent.getService(this, 1, stop,
             PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification.Builder builder = new Notification.Builder(this, CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_menu_mylocation)
-            .setContentTitle("Kur aš? · gyva vieta")
-            .setContentText(stopping ? "Nutraukiamas bendrinimas · laukiama ryšio" :
+            .setSmallIcon(R.drawable.ic_status_question)
+            .setContentTitle(NativeStrings.text(this, 1))
+            .setContentText(stopping ? NativeStrings.text(this, 2) :
                 getSharedPreferences("live_share", MODE_PRIVATE).getLong("sent_at", 0) > 0
-                    ? "Paskutinį kartą perduota " + java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(
+                    ? NativeStrings.text(this, 3) + java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(
                         new java.util.Date(getSharedPreferences("live_share", MODE_PRIVATE).getLong("sent_at", 0)))
-                    : "Laukiama pirmojo sėkmingo perdavimo")
-            .setContentIntent(content).setOngoing(true)
+                    : NativeStrings.text(this, 4))
+            .setContentIntent(content).setOngoing(true).setOnlyAlertOnce(true)
+            .setShowWhen(false).setVisibility(Notification.VISIBILITY_PRIVATE)
             .setCategory(Notification.CATEGORY_SERVICE);
-        if (!stopping) builder.addAction(android.R.drawable.ic_media_pause, "Sustabdyti", stopAction);
+        if (!stopping) builder.addAction(android.R.drawable.ic_media_pause, NativeStrings.text(this, 5), stopAction);
         return builder.build();
     }
 
@@ -226,12 +282,13 @@ public class ShareService extends Service {
     }
 
     private void sendPending() {
+        renewTrackingLock();
         String token = editor;
         if (token == null) return;
         if (cancelling) {
             try {
                 int code = post(new JSONObject().put("action", "stop").put("token", token));
-                if (code >= 200 && code < 300 || code == 410) {
+                if (token.equals(editor) && (code >= 200 && code < 300 || code == 410)) {
                     getSharedPreferences("live_share", MODE_PRIVATE).edit()
                         .remove("editor").remove("pending_stop").putString("stopped", token).apply();
                     runningToken = null; editor = null;
@@ -242,6 +299,7 @@ public class ShareService extends Service {
         }
         Location location = lastLocation;
         if (!tracking || location == null) return;
+        if (System.currentTimeMillis() - lastAttempt < 9000) return;
         lastAttempt = System.currentTimeMillis();
         try {
             JSONObject data = new JSONObject().put("action", "update").put("token", token)
@@ -252,8 +310,10 @@ public class ShareService extends Service {
                 .put("measuredAt", Math.min(System.currentTimeMillis(), Math.max(0, location.getTime())))
                 .put("battery", battery()).put("gps", gpsText).put("network", network());
             int code = post(data);
+            if (!token.equals(editor) || cancelling) return;
             if (code >= 200 && code < 300) {
                 getSharedPreferences("live_share", MODE_PRIVATE).edit().putLong("sent_at", System.currentTimeMillis())
+                    .putLong("measured_at", location.getTime())
                     .remove("last_error").apply();
                 updateNotification(false);
             } else if (code == 410 && token.equals(editor)) {
@@ -321,6 +381,10 @@ public class ShareService extends Service {
 
     @Override public void onDestroy() {
         stopTracking();
+        if (networkCallback != null) {
+            ((ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE)).unregisterNetworkCallback(networkCallback);
+            networkCallback = null;
+        }
         if (worker != null) worker.shutdownNow();
         if (editor != null && editor.equals(runningToken)) runningToken = null;
         super.onDestroy();

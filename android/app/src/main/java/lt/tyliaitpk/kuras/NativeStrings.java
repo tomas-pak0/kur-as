@@ -1,0 +1,11 @@
+package lt.tyliaitpk.kuras;
+import android.content.Context;
+final class NativeStrings {
+ static final String[] LANGUAGES={"lt", "lv", "pl", "en", "de", "es", "fr", "it", "uk", "ru"};
+ static final String[][] TEXT={{"Vietos bendrinimas", "Atrašanās vietas kopīgošana", "Udostępnianie lokalizacji", "Location sharing", "Standortfreigabe", "Compartir ubicación", "Partage de position", "Condivisione posizione", "Поширення розташування", "Передача местоположения"}, {"Kur aš? · gyva vieta", "Kur es esmu? · tiešraide", "Gdzie jestem? · na żywo", "Where am I? · live location", "Wo bin ich? · Live-Standort", "¿Dónde estoy? · en directo", "Où suis-je ? · position en direct", "Dove sono? · posizione live", "Де я? · поточне розташування", "Где я? · текущее местоположение"}, {"Nutraukiamas bendrinimas · laukiama ryšio", "Kopīgošana tiek apturēta · gaida savienojumu", "Kończenie udostępniania · oczekiwanie na połączenie", "Stopping sharing · waiting for connection", "Freigabe wird beendet · warte auf Verbindung", "Deteniendo · esperando conexión", "Arrêt du partage · attente de connexion", "Interruzione · attesa connessione", "Зупинка поширення · очікування з’єднання", "Остановка передачи · ожидание соединения"}, {"Paskutinį kartą perduota ", "Pēdējā nosūtīšana ", "Ostatnio wysłano ", "Last sent at ", "Zuletzt gesendet um ", "Último envío a las ", "Dernier envoi à ", "Ultimo invio alle ", "Останнє надсилання о ", "Последняя отправка в "}, {"Laukiama pirmojo sėkmingo perdavimo", "Gaida pirmo veiksmīgo nosūtīšanu", "Oczekiwanie na pierwsze wysłanie", "Waiting for first successful transmission", "Warte auf erste erfolgreiche Übertragung", "Esperando la primera transmisión", "Attente du premier envoi réussi", "Attesa del primo invio riuscito", "Очікування першого успішного надсилання", "Ожидание первой успешной отправки"}, {"Sustabdyti", "Apturēt", "Zatrzymaj", "Stop", "Stoppen", "Detener", "Arrêter", "Ferma", "Зупинити", "Остановить"}};
+ static String text(Context context, int key) {
+ String language=context.getSharedPreferences("settings",Context.MODE_PRIVATE).getString("language",java.util.Locale.getDefault().getLanguage());
+ int index=3; for(int i=0;i<LANGUAGES.length;i++)if(LANGUAGES[i].equals(language))index=i;
+ return TEXT[key][index];
+ }
+}

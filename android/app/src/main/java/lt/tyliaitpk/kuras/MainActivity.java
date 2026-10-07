@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.GnssStatus;
 import android.location.LocationManager;
+import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -21,7 +22,9 @@ import android.telephony.CellSignalStrength;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyCallback;
 import android.telephony.TelephonyManager;
+import android.telephony.emergency.EmergencyNumber;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.WindowInsets;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
@@ -33,6 +36,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import org.json.JSONObject;
+import org.json.JSONArray;
 import java.util.List;
 import java.util.Locale;
 
@@ -111,6 +115,10 @@ public class MainActivity extends Activity {
                 if (pageReady && "/app.html".equals(Uri.parse(url).getPath())) readyBridge();
                 showTelemetry();
             }
+            @Override public void onPageCommitVisible(WebView view, String url) {
+                pageReady = trusted(Uri.parse(url));
+                if (pageReady && "/app.html".equals(Uri.parse(url).getPath())) readyBridge();
+            }
         });
         webView.setWebChromeClient(new WebChromeClient() {
             @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback,
@@ -136,6 +144,33 @@ public class MainActivity extends Activity {
                 Uri source = Uri.parse(url);
                 if (!trusted(source) || !"/app.html".equals(source.getPath()))
                     return super.onJsPrompt(view, url, message, defaultValue, result);
+                if ("kuras:emergency:info".equals(message)) {
+                    result.confirm(emergencyInfo(defaultValue));
+                    return true;
+                }
+                if ("kuras:dial".equals(message)) {
+                    if (defaultValue == null || !defaultValue.matches("[0-9]{0,6}")) { result.confirm("error"); return true; }
+                    try {
+                        startActivity(new Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + defaultValue)));
+                        result.confirm("ok");
+                    } catch (ActivityNotFoundException ex) { result.confirm("error"); }
+                    return true;
+                }
+                if ("kuras:share:text".equals(message)) {
+                    if (defaultValue == null || defaultValue.length() > 6000) { result.confirm("error"); return true; }
+                    try {
+                        Intent share = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                            .putExtra(Intent.EXTRA_TEXT, defaultValue);
+                        startActivity(Intent.createChooser(share, null));
+                        result.confirm("ok");
+                    } catch (ActivityNotFoundException ex) { result.confirm("error"); }
+                    return true;
+                }
+                if ("kuras:language".equals(message) && defaultValue != null
+                    && defaultValue.matches("lt|lv|pl|en|de|es|fr|it|uk|ru")) {
+                    getSharedPreferences("settings", MODE_PRIVATE).edit().putString("language", defaultValue).apply();
+                    result.confirm("ok"); return true;
+                }
                 if ("kuras:background:status".equals(message) && validEditor(defaultValue)) {
                     result.confirm(ShareService.status(MainActivity.this, defaultValue));
                     return true;
@@ -144,11 +179,30 @@ public class MainActivity extends Activity {
                     result.confirm(ShareService.health(MainActivity.this, defaultValue));
                     return true;
                 }
-                if ("kuras:background:start".equals(message) && validEditor(defaultValue)) {
+                if ("kuras:background:settings".equals(message)) {
+                    try {
+                        startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.parse("package:" + getPackageName())));
+                        result.confirm("ok");
+                    } catch (ActivityNotFoundException ex) { result.confirm("error"); }
+                    return true;
+                }
+                if ("kuras:background:start".equals(message)) {
+                    String token = defaultValue;
+                    Location initial = null;
+                    try {
+                        if (defaultValue != null && defaultValue.startsWith("{")) {
+                            JSONObject request = new JSONObject(defaultValue);
+                            token = request.optString("token");
+                            initial = initialLocation(request.optJSONObject("position"));
+                        }
+                    } catch (Exception ignored) { result.confirm("error"); return true; }
+                    if (!validEditor(token)) { result.confirm("error"); return true; }
                     if (!hasLocationPermission()) { result.confirm("permission"); return true; }
                     try {
                         Intent service = new Intent(MainActivity.this, ShareService.class)
-                            .setAction(ShareService.START).putExtra(ShareService.TOKEN, defaultValue);
+                            .setAction(ShareService.START).putExtra(ShareService.TOKEN, token);
+                        if (initial != null) service.putExtra(ShareService.INITIAL_LOCATION, initial);
                         startForegroundService(service);
                         result.confirm("ok");
                         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -243,16 +297,70 @@ public class MainActivity extends Activity {
             && uri.getPort() == -1;
     }
     private boolean validEditor(String token) { return token != null && token.matches("[a-f0-9]{64}"); }
+    private Location initialLocation(JSONObject position) throws Exception {
+        if (position == null) return null;
+        double latitude = position.getDouble("latitude"), longitude = position.getDouble("longitude");
+        double accuracy = position.getDouble("accuracy");
+        long measuredAt = position.getLong("timestamp");
+        if (!Double.isFinite(latitude) || Math.abs(latitude) > 90
+            || !Double.isFinite(longitude) || Math.abs(longitude) > 180
+            || !Double.isFinite(accuracy) || accuracy < 0 || accuracy > 100000
+            || measuredAt <= 0 || measuredAt > System.currentTimeMillis() + 60000) return null;
+        Location location = new Location("webview");
+        location.setLatitude(latitude); location.setLongitude(longitude);
+        location.setAccuracy((float) accuracy); location.setTime(measuredAt);
+        double speed = position.optDouble("speed", Double.NaN);
+        double heading = position.optDouble("heading", Double.NaN);
+        if (Double.isFinite(speed) && speed >= 0 && speed <= 1000) location.setSpeed((float) speed);
+        if (Double.isFinite(heading) && heading >= 0 && heading <= 360) location.setBearing((float) heading);
+        return location;
+    }
     private void readyBridge() {
-        webView.evaluateJavascript("window.KurAsNative={start:function(t){return prompt('kuras:background:start',t)},"
+        webView.evaluateJavascript("window.KurAsNative={version:'0.5.7',start:function(t,p){return prompt('kuras:background:start',JSON.stringify({token:t,position:p?{latitude:p.coords.latitude,longitude:p.coords.longitude,accuracy:p.coords.accuracy,speed:p.coords.speed,heading:p.coords.heading,timestamp:p.timestamp}:null}))},"
             + "stop:function(t){return prompt('kuras:background:stop',t)},"
             + "status:function(t){return prompt('kuras:background:status',t)},"
             + "health:function(t){return prompt('kuras:background:health',t)}};"
+            + "window.KurAsNative.settings=function(){return prompt('kuras:background:settings','')};"
+            + "window.KurAsNative.emergency=function(c){return prompt('kuras:emergency:info',c||'')};"
+            + "window.KurAsNative.dial=function(n){return prompt('kuras:dial',n||'')};"
+            + "window.KurAsNative.shareText=function(s){return prompt('kuras:share:text',s)};"
+            + "if(!window.KurAsLanguageBridge){window.KurAsLanguageBridge=true;window.addEventListener('kur-as-language-change',function(){prompt('kuras:language',window.KurAsI18n.language)})}"
+            + "if(window.KurAsI18n)prompt('kuras:language',window.KurAsI18n.language);"
             + "window.dispatchEvent(new Event('kur-as-native-ready'));", null);
     }
     private void openExternal(Uri uri) {
         try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); }
         catch (ActivityNotFoundException ignored) { }
+    }
+    private String emergencyInfo(String requestedCountry) {
+        JSONObject data = new JSONObject();
+        JSONArray numbers = new JSONArray();
+        String networkCountry = "";
+        try {
+            if (telephonyManager != null) networkCountry = telephonyManager.getNetworkCountryIso();
+        } catch (SecurityException | UnsupportedOperationException ignored) { }
+        String country = requestedCountry != null && requestedCountry.matches("[a-zA-Z]{2}")
+            ? requestedCountry.toLowerCase(Locale.ROOT) : networkCountry;
+        try {
+            data.put("country", networkCountry);
+            if (Build.VERSION.SDK_INT >= 29 && telephonyManager != null
+                && checkSelfPermission(Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                for (List<EmergencyNumber> list : telephonyManager.getEmergencyNumberList().values()) {
+                    for (EmergencyNumber number : list) {
+                        String iso = number.getCountryIso();
+                        if (!iso.isEmpty() && !iso.equalsIgnoreCase(country)) continue;
+                        int categories = 0, sources = 0;
+                        for (int category : number.getEmergencyServiceCategories()) categories |= category;
+                        for (int origin : number.getEmergencyNumberSources()) sources |= origin;
+                        numbers.put(new JSONObject().put("number", number.getNumber())
+                            .put("country", iso.toLowerCase(Locale.ROOT))
+                            .put("categories", categories).put("source", sources));
+                    }
+                }
+            }
+        } catch (Exception ignored) { }
+        try { data.put("numbers", numbers); } catch (Exception ignored) { }
+        return data.toString();
     }
     private boolean hasLocationPermission() {
         return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
@@ -323,6 +431,7 @@ public class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (webView != null) webView.onResume();
         android.content.SharedPreferences sharing = getSharedPreferences("live_share", MODE_PRIVATE);
         if (sharing.getBoolean("pending_stop", false) && hasLocationPermission()) {
@@ -345,6 +454,7 @@ public class MainActivity extends Activity {
         updateNetwork();
     }
     @Override protected void onPause() {
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (gnssTracking) { locationManager.unregisterGnssStatusCallback(gnssCallback); gnssTracking = false; }
         if (signalCallback != null && Build.VERSION.SDK_INT >= 31) {
             telephonyManager.unregisterTelephonyCallback(signalCallback);
