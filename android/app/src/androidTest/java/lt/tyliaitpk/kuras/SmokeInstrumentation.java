@@ -55,6 +55,12 @@ public class SmokeInstrumentation extends Instrumentation {
             shell("wm dismiss-keyguard");
             Activity activity = startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             PowerManager power = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            // A cold WebView startup can outlast the emulator's 15-second screen timeout.
+            // Begin the foreground timer only after the activity is ready and the screen is awake.
+            shell("input keyevent KEYCODE_WAKEUP");
+            shell("wm dismiss-keyguard");
+            Thread.sleep(500);
+            require(power.isInteractive(), "The emulator screen did not wake before the foreground test");
             Thread.sleep(25000);
             require(power.isInteractive(), "Screen slept while the application was visible");
             result.putString("foregroundScreenAfter25s", "awake");
@@ -105,7 +111,19 @@ public class SmokeInstrumentation extends Instrumentation {
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("status", "failed"); result.putString("error", error.getClass().getSimpleName() + ": " + error.getMessage());
-            try { result.putString("powerDiagnostics", shell("dumpsys power | grep -E 'mWakefulness=|mStayOn=|mWakeLockSummary=|mUserActivitySummary=|mScreenOffTimeoutSetting='").trim().replace('\n', '|')); }
+            try {
+                StringBuilder diagnostics = new StringBuilder();
+                for (String line : shell("dumpsys power").split("\\n")) {
+                    if (line.contains("mWakefulness=") || line.contains("mStayOn=")
+                        || line.contains("mWakeLockSummary=") || line.contains("mScreenOffTimeoutSetting="))
+                        diagnostics.append(line.trim()).append("; ");
+                }
+                for (String line : shell("dumpsys window").split("\\n")) {
+                    if (line.contains("mCurrentFocus=") || line.contains("mFocusedApp=") || line.contains("mHoldScreenWindow="))
+                        diagnostics.append(line.trim()).append("; ");
+                }
+                result.putString("powerDiagnostics", diagnostics.toString());
+            }
             catch (Exception ignored) { }
             finish(Activity.RESULT_CANCELED, result);
         } finally {
