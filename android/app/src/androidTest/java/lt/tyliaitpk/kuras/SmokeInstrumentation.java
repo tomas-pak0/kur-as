@@ -52,6 +52,7 @@ public class SmokeInstrumentation extends Instrumentation {
             shell("settings put system screen_off_timeout 15000");
             result.putString("screenOffTimeoutMs", shell("settings get system screen_off_timeout").trim());
             shell("input keyevent KEYCODE_WAKEUP");
+            shell("wm dismiss-keyguard");
             Activity activity = startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             PowerManager power = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
             Thread.sleep(25000);
@@ -91,7 +92,9 @@ public class SmokeInstrumentation extends Instrumentation {
             result.putString("newFixGeneratedAfterScreenSlept", "passed");
             result.putString("backgroundNewLocationReceived", "passed");
             shell("input keyevent KEYCODE_WAKEUP");
-            startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            shell("wm dismiss-keyguard");
+            // singleTop resumes the existing activity; startActivitySync waits for a new instance.
+            shell("am start -n lt.tyliaitpk.kuras/.MainActivity");
             Thread.sleep(20000);
             require(power.isInteractive(), "Screen slept after resuming the application");
             result.putString("resumedScreenAfter20s", "awake");
