@@ -32,10 +32,10 @@ public class SmokeInstrumentation extends Instrumentation {
             try (java.io.InputStream input = connection.getInputStream()) { return new JSONObject(new String(input.readAllBytes(), StandardCharsets.UTF_8)); }
         } finally { connection.disconnect(); }
     }
-    private void shell(String command) throws Exception {
+    private String shell(String command) throws Exception {
         try (android.os.ParcelFileDescriptor.AutoCloseInputStream input =
                  new android.os.ParcelFileDescriptor.AutoCloseInputStream(getUiAutomation().executeShellCommand(command))) {
-            input.readAllBytes();
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }
     }
     private Location fix(double latitude, double longitude) {
@@ -48,7 +48,9 @@ public class SmokeInstrumentation extends Instrumentation {
         Context context = getTargetContext(); Bundle result = new Bundle();
         LocationManager locations = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         try {
+            shell("settings put global stay_on_while_plugged_in 0");
             shell("settings put system screen_off_timeout 15000");
+            result.putString("screenOffTimeoutMs", shell("settings get system screen_off_timeout").trim());
             shell("input keyevent KEYCODE_WAKEUP");
             Activity activity = startActivitySync(new Intent(context, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             PowerManager power = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
@@ -100,6 +102,8 @@ public class SmokeInstrumentation extends Instrumentation {
             finish(Activity.RESULT_OK, result);
         } catch (Throwable error) {
             result.putString("status", "failed"); result.putString("error", error.getClass().getSimpleName() + ": " + error.getMessage());
+            try { result.putString("powerDiagnostics", shell("dumpsys power | grep -E 'mWakefulness=|mStayOn=|mWakeLockSummary=|mUserActivitySummary=|mScreenOffTimeoutSetting='").trim().replace('\n', '|')); }
+            catch (Exception ignored) { }
             finish(Activity.RESULT_CANCELED, result);
         } finally {
             if (editor != null) {
